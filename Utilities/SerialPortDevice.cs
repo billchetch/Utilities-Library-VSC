@@ -42,13 +42,17 @@ public class SerialPortDevice
                     }
                 }
             }
-            if(results.Count != 1)
+            if(results.Count == 1)
             {
-                throw new Exception(String.Format("Found {0} results, should only be one!", results.Count));
+                portName = results[0];
+            }
+            else if(results.Count == 0)
+            {
+                throw new Exception(String.Format("Cannot find {0} ... please check serial device is attached", searchFor);
             }
             else
             {
-                portName = results[0];
+                throw new Exception(String.Format("Found {0} results, should only be one!", results.Count));
             }
         }
         else if(OperatingSystem.IsLinux())
@@ -65,6 +69,10 @@ public class SerialPortDevice
                         break;
                     }
                 }
+                if(String.IsNullOrEmpty(portName))
+                {
+                    throw new Exception(String.Format("Cannot find {0} in {1} .. check serial defvice is attached", searchFor, devDirectoryPath));
+                }
             } 
             else 
             {
@@ -75,7 +83,7 @@ public class SerialPortDevice
         {
             throw new Exception(String.Format("Unrecognised platform: {0} Version: {1}", Environment.OSVersion.Platform, Environment.OSVersion.Version));
         }
-        
+
         return portName;
     }
 }
