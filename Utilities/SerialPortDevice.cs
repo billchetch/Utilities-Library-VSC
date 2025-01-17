@@ -86,4 +86,15 @@ public class SerialPortDevice
 
         return portName;
     }
+
+    static public bool PortExists(String portName)
+    {
+        var portNames = SerialPort.GetPortNames();
+        foreach(var pn in portNames){
+            if(pn.Equals(portName)){
+                return true;
+            }
+        }
+        return false;
+    }
 }
