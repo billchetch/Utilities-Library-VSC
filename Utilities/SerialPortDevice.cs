@@ -48,7 +48,7 @@ public class SerialPortDevice
             }
             else if(results.Count == 0)
             {
-                throw new Exception(String.Format("Cannot find {0} ... please check serial device is attached", searchFor);
+                throw new Exception(String.Format("Cannot find {0} ... please check serial device is attached", searchFor));
             }
             else
             {
