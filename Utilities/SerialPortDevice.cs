@@ -15,57 +15,67 @@ public class SerialPortDevice
 
          if(OperatingSystem.IsMacOS())
         {
-            try
+            String output = CMD.Exec("ioreg",  "-a -r -c IOUSBHostDevice -l");
+            
+            //parse the output which is expected to be XML
+            var xe = XElement.Parse(output);
+            
+            //Now search through the XML to find the right reg items
+            var vals = xe.Descendants("key")
+                .Where(x => x.Value == searchKey && ((XElement)x.NextNode).Value.Contains(searchFor))
+                .Select(x => x.Parent);
+            
+            //Search through reg items to find required value
+            String returnKey = "IOCalloutDevice";
+            var results = new List<String>();
+            foreach(var elt in vals)
             {
-                String output = CMD.Exec("ioreg",  "-a -r -c IOUSBHostDevice -l");
-                
-                //parse the output which is expected to be XML
-                var xe = XElement.Parse(output);
-                
-                //Now search through the XML to find the right reg items
-                var vals = xe.Descendants("key")
-                    .Where(x => x.Value == searchKey && ((XElement)x.NextNode).Value.Contains(searchFor))
-                    .Select(x => x.Parent);
-                
-                //Search through reg items to find required value
-                String returnKey = "IOCalloutDevice";
-                var results = new List<String>();
-                foreach(var elt in vals)
+                var found = elt.Descendants("key").Where(x => x.Value == returnKey).Select(x => ((XElement)x.NextNode).Value);
+                if(found.Any())
                 {
-                    var found = elt.Descendants("key").Where(x => x.Value == returnKey).Select(x => ((XElement)x.NextNode).Value);
-                    if(found.Any())
+                    foreach(var pn in found)
                     {
-                        foreach(var pn in found)
+                        if(!results.Contains(pn))
                         {
-                            if(!results.Contains(pn))
-                            {
-                                results.Add(pn);
-                            }
+                            results.Add(pn);
                         }
                     }
                 }
-                if(results.Count != 1)
-                {
-                    throw new Exception(String.Format("Found {0} results, should only be one!", results.Count));
-                }
-                else
-                {
-                    return portName = results[0];
-                }
             }
-            catch (Exception e)
+            if(results.Count != 1)
             {
-                Console.WriteLine(e.Message);
+                throw new Exception(String.Format("Found {0} results, should only be one!", results.Count));
+            }
+            else
+            {
+                portName = results[0];
             }
         }
         else if(OperatingSystem.IsLinux())
         {
-
+            String devDirectoryPath = "/dev/serial/by-id/";
+            if(Directory.Exists(devDirectoryPath))
+            {
+                var files = Directory.GetFiles(devDirectoryPath);
+                foreach(var fname in files)
+                {
+                    if(fname.Contains(searchFor))
+                    {
+                        portName = devDirectoryPath + fname;
+                        break;
+                    }
+                }
+            } 
+            else 
+            {
+                throw new Exception(String.Format("Cannot find directory {0} ... check serial device is attached", devDirectoryPath));
+            }
         }
         else
         {
             throw new Exception(String.Format("Unrecognised platform: {0} Version: {1}", Environment.OSVersion.Platform, Environment.OSVersion.Version));
         }
+        
         return portName;
     }
 }
