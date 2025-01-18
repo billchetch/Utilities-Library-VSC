@@ -65,7 +65,7 @@ public class SerialPortDevice
                 {
                     if(fname.Contains(searchFor))
                     {
-                        portName = devDirectoryPath + fname;
+                        portName = fname;
                         break;
                     }
                 }
@@ -85,9 +85,5 @@ public class SerialPortDevice
         }
 
         return portName;
-    }
-
-    static public String GetPortNameForDevice(int searchFor, String searchKey){
-        return GetPortNameForDevice(searchFor.ToString(), searchKey);
     }
 }
