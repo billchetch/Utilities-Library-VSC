@@ -121,6 +121,8 @@ public abstract class SerialPortDevice
 
     SerialPort serialPort;
     
+    Exception lastError;
+
     System.Timers.Timer reopenTimer = new System.Timers.Timer();
     #endregion
 
@@ -200,8 +202,7 @@ public abstract class SerialPortDevice
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                //possible loggin or something here
+                lastError = e;
             }
         }
         
@@ -212,8 +213,9 @@ public abstract class SerialPortDevice
             {
                 serialPort.Open();
             }
-            catch
+            catch (Exception e)
             {
+                lastError = e;
                 //possible loggin or something here
             }
         }
