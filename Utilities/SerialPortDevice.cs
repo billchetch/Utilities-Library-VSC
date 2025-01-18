@@ -221,7 +221,7 @@ public abstract class SerialPortDevice
         }
 
         //restart the ol timer
-        //reopenTimer.Start();
+        reopenTimer.Start();
     }
 
     public void Disconnect()
