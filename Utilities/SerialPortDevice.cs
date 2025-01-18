@@ -86,4 +86,8 @@ public class SerialPortDevice
 
         return portName;
     }
+
+    static public String GetPortNameForDevice(int searchFor, String searchKey){
+        return GetPortNameForDevice(searchFor.ToString(), searchKey);
+    }
 }
