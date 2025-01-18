@@ -137,7 +137,7 @@ public abstract class SerialPortDevice
     #endregion
 
     #region Constructors
-    public SerialPortDevice(int baudRate = 9600, Parity parity = Parity.None, int dataBits = 8, StopBits stopBits = StopBits.One)
+    public SerialPortDevice(int baudRate, Parity parity, int dataBits, StopBits stopBits)
     {
         this.baudRate = baudRate;
         this.parity = parity;
