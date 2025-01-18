@@ -8,23 +8,27 @@ public static class CMD
     public static String Exec(String command, String args = null){
         
         Process proc = new Process();
+        proc.StartInfo.UseShellExecute = false;
         proc.StartInfo.RedirectStandardOutput = true;
         proc.StartInfo.Arguments = args;
         proc.StartInfo.FileName = command;
+        String result = String.Empty;
+        
+        proc.OutputDataReceived += (sender, eargs) =>{
+            result += eargs.Data;
+        };
         proc.Start();
+        proc.BeginOutputReadLine();
         
         proc.WaitForExit();
 
-        String result = String.Empty;
         if(proc.HasExited)
         {
-            result = proc.StandardOutput.ReadToEnd();
+             return result;   
         }
         else
         {
             throw new Exception("Process has not exited");
         }
-
-        return result;
     }
 }

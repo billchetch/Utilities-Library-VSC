@@ -4,11 +4,17 @@ using System.IO.Ports;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml.Linq;
+using System.Data.SqlTypes;
 
 namespace Chetch.Utilities;
 
-public class SerialPortDevice
+public abstract class SerialPortDevice
 {
+    #region Constants
+    public const int REOPEN_TIMER_INTERVAL = 2000;
+    #endregion
+
+    #region Static stuff
     static public String GetPortNameForDevice(String searchFor, String searchKey)
     {
         String portName = String.Empty;
@@ -87,7 +93,146 @@ public class SerialPortDevice
         return portName;
     }
 
-    static public String GetPortNameForDevice(int searchFor, String searchKey){
+    static public String GetPortNameForDevice(int searchFor, String searchKey)
+    {
         return GetPortNameForDevice(searchFor.ToString(), searchKey);
     }
+
+    static public bool PortExists(String portName)
+    {
+        var portNames = SerialPort.GetPortNames();
+        foreach(var pn in portNames){
+            if(pn.Equals(portName)){
+                return true;
+            }
+        }
+        return false;
+    }
+    #endregion
+
+    #region Enums and Classes
+    #endregion
+
+    #region Fields
+    int baudRate;
+    Parity parity;
+    int dataBits;
+    StopBits stopBits;
+
+    SerialPort serialPort;
+    
+    System.Timers.Timer reopenTimer = new System.Timers.Timer();
+    #endregion
+
+    #region Properties
+    public String PortName { get; internal set; } = String.Empty;
+    
+    bool IsConnected => serialPort != null && serialPort.IsOpen;
+    #endregion
+
+    #region Events
+    public event EventHandler<byte[]> DataReceived;
+    #endregion
+
+    #region Constructors
+    public SerialPortDevice(int baudRate = 9600, Parity parity = Parity.None, int dataBits = 8, StopBits stopBits = StopBits.One)
+    {
+        this.baudRate = baudRate;
+        this.parity = parity;
+        this.dataBits = dataBits;
+        this.stopBits = stopBits;
+
+        reopenTimer.AutoReset = false;
+        reopenTimer.Interval = REOPEN_TIMER_INTERVAL;
+        reopenTimer.Elapsed += (sender, eargs) => {
+                reopenTimer.Stop();
+
+                Console.WriteLine("Reopen timer fired");
+                try
+                {
+                    if(!IsConnected)
+                    {
+                        serialPort?.Dispose();
+                        serialPort = null;
+                        Connect();
+                    }
+                }
+                catch 
+                {
+                    //what to do here??
+                }
+                reopenTimer.Start();
+            };
+    }
+    #endregion
+
+    #region Methods
+    abstract protected String getPortName();
+
+    virtual protected void OnDataReceived(byte[] data)
+    {
+        DataReceived?.Invoke(this, data);
+    }
+
+    public void Connect()
+    {
+        reopenTimer.Stop();
+        
+        //Serial port creation
+        if(serialPort == null)
+        {
+            try{
+                PortName = getPortName();
+                if(PortExists(PortName))
+                {   
+                    serialPort = new SerialPort(PortName, baudRate, parity, dataBits, stopBits);
+                    serialPort.DataReceived += (ArrayShapeEncoder, eargs) => {
+                            int dataLength = serialPort.BytesToRead;
+                            byte[] data = new byte[dataLength];
+                            int nbrDataRead = serialPort.Read(data, 0, dataLength);
+
+                            if (nbrDataRead == 0)
+                                return;
+                    
+                            OnDataReceived(data);
+                        };    
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                //possible loggin or something here
+            }
+        }
+        
+        //Serial port opening
+        if(serialPort != null && !serialPort.IsOpen)
+        {
+            try
+            {
+                serialPort.Open();
+            }
+            catch
+            {
+                //possible loggin or something here
+            }
+        }
+
+        //restart the ol timer
+        //reopenTimer.Start();
+    }
+
+    public void Disconnect()
+    {
+        if(serialPort != null)
+        {
+            if(serialPort.IsOpen)
+                serialPort.Close();
+
+            serialPort.Dispose();
+            serialPort = null;
+        }
+        reopenTimer.Stop();
+    }
+    #endregion
 }
