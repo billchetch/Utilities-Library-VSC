@@ -71,7 +71,7 @@ public abstract class SerialPortDevice
                 {
                     if(fname.Contains(searchFor))
                     {
-                        portName = devDirectoryPath + fname;
+                        portName = fname;
                         break;
                     }
                 }
