@@ -71,7 +71,15 @@ public abstract class SerialPortDevice
                 {
                     if(fname.Contains(searchFor))
                     {
-                        portName = fname;
+                        FileInfo fi = new FileInfo(fname);
+                        if(!String.IsNullOrEmpty(fi.LinkTarget))
+                        {
+                            portName = Path.GetFullPath(fi.LinkTarget, fi.Directory.FullName);
+                        } 
+                        else 
+                        {
+                            portName = fname;
+                        }
                         break;
                     }
                 }
