@@ -139,7 +139,7 @@ public abstract class SerialPortDevice
     #region Properties
     public String PortName { get; internal set; } = String.Empty;
     
-    public bool IsConnected => serialPort != null && serialPort.IsOpen;
+    public bool IsConnected => serialPort != null && serialPort.IsOpen && SerialPortDevice.PortExists(PortName);
     #endregion
 
     #region Events
