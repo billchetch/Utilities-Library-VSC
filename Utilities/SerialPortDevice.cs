@@ -161,7 +161,6 @@ public abstract class SerialPortDevice
         connectTimer.Elapsed += (sender, eargs) => {
                 connectTimer.Stop();
 
-                Console.WriteLine("Connect timer fired");
                 try
                 {
                     if(!IsConnected)
