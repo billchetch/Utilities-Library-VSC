@@ -142,6 +142,8 @@ public abstract class SerialPortDevice
 
     #region Events
     public event EventHandler<byte[]> DataReceived;
+
+    public event EventHandler<bool> Connected;
     #endregion
 
     #region Constructors
@@ -162,6 +164,7 @@ public abstract class SerialPortDevice
                 {
                     if(!IsConnected)
                     {
+                        Connected?.Invoke(this, false);
                         serialPort?.Dispose();
                         serialPort = null;
                         Connect();
@@ -220,6 +223,7 @@ public abstract class SerialPortDevice
             try
             {
                 serialPort.Open();
+                Connected?.Invoke(this, true);
             }
             catch (Exception e)
             {
