@@ -131,7 +131,9 @@ public abstract class SerialPortDevice
     
     Exception lastError;
 
-    System.Timers.Timer reopenTimer = new System.Timers.Timer();
+    System.Timers.Timer connectTimer = new System.Timers.Timer();
+
+    bool connected; //we save state for triggering events
     #endregion
 
     #region Properties
@@ -154,17 +156,20 @@ public abstract class SerialPortDevice
         this.dataBits = dataBits;
         this.stopBits = stopBits;
 
-        reopenTimer.AutoReset = false;
-        reopenTimer.Interval = REOPEN_TIMER_INTERVAL;
-        reopenTimer.Elapsed += (sender, eargs) => {
-                reopenTimer.Stop();
+        connectTimer.AutoReset = false;
+        connectTimer.Interval = REOPEN_TIMER_INTERVAL;
+        connectTimer.Elapsed += (sender, eargs) => {
+                connectTimer.Stop();
 
-                Console.WriteLine("Reopen timer fired");
+                Console.WriteLine("Connect timer fired");
                 try
                 {
                     if(!IsConnected)
                     {
-                        Connected?.Invoke(this, false);
+                        if(connected){
+                            connected = false;
+                            Connected?.Invoke(this, connected);
+                        }
                         serialPort?.Dispose();
                         serialPort = null;
                         Connect();
@@ -174,7 +179,7 @@ public abstract class SerialPortDevice
                 {
                     //what to do here??
                 }
-                reopenTimer.Start();
+                connectTimer.Start();
             };
     }
     #endregion
@@ -189,7 +194,7 @@ public abstract class SerialPortDevice
 
     public void Connect()
     {
-        reopenTimer.Stop();
+        connectTimer.Stop();
         
         //Serial port creation
         if(serialPort == null)
@@ -223,7 +228,8 @@ public abstract class SerialPortDevice
             try
             {
                 serialPort.Open();
-                Connected?.Invoke(this, true);
+                connected = true;
+                Connected?.Invoke(this, connected);
             }
             catch (Exception e)
             {
@@ -233,11 +239,15 @@ public abstract class SerialPortDevice
         }
 
         //restart the ol timer
-        reopenTimer.Start();
+        connectTimer.Start();
     }
 
     public void Disconnect()
     {
+        if(connected){
+            connected = false;
+            Connected?.Invoke(this, connected);
+        }
         if(serialPort != null)
         {
             if(serialPort.IsOpen)
@@ -246,7 +256,7 @@ public abstract class SerialPortDevice
             serialPort.Dispose();
             serialPort = null;
         }
-        reopenTimer.Stop();
+        connectTimer.Stop();
     }
     #endregion
 }
