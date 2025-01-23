@@ -8,7 +8,7 @@ using System.Data.SqlTypes;
 
 namespace Chetch.Utilities;
 
-public abstract class SerialPortDevice
+public abstract class SerialPortConnection
 {
     #region Constants
     public const int REOPEN_TIMER_INTERVAL = 2000;
@@ -139,7 +139,7 @@ public abstract class SerialPortDevice
     #region Properties
     public String PortName { get; internal set; } = String.Empty;
     
-    public bool IsConnected => serialPort != null && serialPort.IsOpen && SerialPortDevice.PortExists(PortName);
+    public bool IsConnected => serialPort != null && serialPort.IsOpen && SerialPortConnection.PortExists(PortName);
     #endregion
 
     #region Events
@@ -149,7 +149,7 @@ public abstract class SerialPortDevice
     #endregion
 
     #region Constructors
-    public SerialPortDevice(int baudRate, Parity parity, int dataBits, StopBits stopBits)
+    public SerialPortConnection(int baudRate, Parity parity, int dataBits, StopBits stopBits)
     {
         this.baudRate = baudRate;
         this.parity = parity;
