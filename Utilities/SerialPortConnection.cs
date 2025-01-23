@@ -241,6 +241,14 @@ public abstract class SerialPortConnection
         connectTimer.Start();
     }
 
+    public void SendData(byte[] data)
+    {
+        if(data.Length > 0)
+        {
+            serialPort.Write(data, 0, data.Length);
+        }
+    }
+    
     public void Disconnect()
     {
         if(connected){
