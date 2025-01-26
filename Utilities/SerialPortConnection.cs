@@ -174,9 +174,9 @@ public abstract class SerialPortConnection
                         Connect();
                     }
                 }
-                catch 
+                catch (Exception e)
                 {
-                    //what to do here??
+                    lastError = e;
                 }
                 connectTimer.Start();
             };
@@ -190,15 +190,15 @@ public abstract class SerialPortConnection
     {
         DataReceived?.Invoke(this, data);
     }
-
+    
     public void Connect()
     {
         connectTimer.Stop();
         
-        //Serial port creation
-        if(serialPort == null)
-        {
-            try{
+        try{
+            //Serial port creation
+            if(serialPort == null)
+            {
                 PortName = getPortName();
                 if(PortExists(PortName))
                 {   
@@ -215,30 +215,28 @@ public abstract class SerialPortConnection
                         };    
                 }
             }
-            catch (Exception e)
-            {
-                lastError = e;
-            }
-        }
-        
-        //Serial port opening
-        if(serialPort != null && !serialPort.IsOpen)
-        {
-            try
+            
+            //Serial port opening
+            if(serialPort != null && !serialPort.IsOpen)
             {
                 serialPort.Open();
                 connected = true;
-                Connected?.Invoke(this, connected);
-            }
-            catch (Exception e)
-            {
-                lastError = e;
-                //possible loggin or something here
+                if(Connected != null){
+                    Task.Run(()=>{
+                        Connected.Invoke(this, connected);
+                    });
+                }
             }
         }
-
-        //restart the ol timer
-        connectTimer.Start();
+        catch(Exception e)
+        {
+            throw new Exception(String.Format("Failed to connect: {0}", e.Message));
+        }
+        finally
+        {
+            //restart the ol timer
+            connectTimer.Start();
+        }
     }
 
     public void SendData(byte[] data)
