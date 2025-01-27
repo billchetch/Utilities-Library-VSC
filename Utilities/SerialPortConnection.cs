@@ -221,11 +221,7 @@ public abstract class SerialPortConnection
             {
                 serialPort.Open();
                 connected = true;
-                if(Connected != null){
-                    Task.Run(()=>{
-                        Connected.Invoke(this, connected);
-                    });
-                }
+                Connected.Invoke(this, connected);
             }
         }
         catch(Exception e)
