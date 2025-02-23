@@ -5,6 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml.Linq;
 using System.Data.SqlTypes;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
 
 namespace Chetch.Utilities;
 
@@ -19,7 +23,7 @@ public abstract class SerialPortConnection
     {
         String portName = String.Empty;
 
-         if(OperatingSystem.IsMacOS())
+        if(OperatingSystem.IsMacOS())
         {
             String output = CMD.Exec("ioreg",  "-a -r -c IOUSBHostDevice -l");
             
@@ -106,6 +110,20 @@ public abstract class SerialPortConnection
         return GetPortNameForDevice(searchFor.ToString(), searchKey);
     }
 
+    static public String[] GetPortNames(String pathTodevice)
+    {
+        List<String> ports2return = [];
+        var portNames = SerialPort.GetPortNames();
+        foreach(var pn in portNames)
+        {
+            if(pn.Contains(pathTodevice))
+            {
+                ports2return.Add(pn);
+            }
+        }
+        return ports2return.ToArray();
+    }
+
     static public bool PortExists(String portName)
     {
         var portNames = SerialPort.GetPortNames();
@@ -116,6 +134,43 @@ public abstract class SerialPortConnection
         }
         return false;
     }
+
+    static public Dictionary<string, string> GetUSBDeviceInfo(String portName)
+    {
+        Dictionary<string, string> devInfo;
+        if(OperatingSystem.IsMacOS())
+        {
+            var xml = CMD.Exec("system_profiler", "-xml SPUSBDataType");
+            //parse the output which is expected to be XML
+            var xe = XElement.Parse(xml);
+            
+            //Now search through the XML to find the right reg items
+            var devices = xe.Descendants("key")
+                .Where(x => x.Value == "location_id")
+                .Select(x => (XElement)x.Parent).ToList();
+
+            foreach(var dev in devices)
+            {
+                devInfo = dev.Elements().Where(x => x.Name == "key").Select(x => x).ToDictionary(x => x.Value, x => ((XElement)x.NextNode).Value);
+                var lid = devInfo["location_id"];
+                if(portName.Contains(lid.Substring(4, 3)))
+                {
+                    return devInfo;
+                }
+            }
+            
+            throw new Exception(String.Format("Could not find device info for usb serial device @ {0}", portName));
+        }
+        else if(OperatingSystem.IsLinux())
+        {
+            throw new Exception(String.Format("Could not find device info for usb serial device @ {0}", portName));
+        }
+        else
+        {
+            throw new Exception(String.Format("Unrecognised platform: {0} Version: {1}", Environment.OSVersion.Platform, Environment.OSVersion.Version));
+        }
+    }
+
     #endregion
 
     #region Enums and Classes
@@ -184,7 +239,7 @@ public abstract class SerialPortConnection
     #endregion
 
     #region Methods
-    abstract protected String getPortName();
+    abstract protected String GetPortName();
 
     virtual protected void OnDataReceived(byte[] data)
     {
@@ -199,7 +254,7 @@ public abstract class SerialPortConnection
             //Serial port creation
             if(serialPort == null)
             {
-                PortName = getPortName();
+                PortName = GetPortName();
                 if(PortExists(PortName))
                 {   
                     serialPort = new SerialPort(PortName, baudRate, parity, dataBits, stopBits);
