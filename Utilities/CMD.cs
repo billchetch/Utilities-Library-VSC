@@ -5,7 +5,7 @@ namespace Chetch.Utilities;
 
 public static class CMD
 {
-    public static String Exec(String command, String args = null, String appendToDataREceived = null){
+    public static String Exec(String command, String args = null, String appendToDataReceived = null){
         
         Process proc = new Process();
         proc.StartInfo.UseShellExecute = false;
@@ -16,9 +16,9 @@ public static class CMD
         
         proc.OutputDataReceived += (sender, eargs) =>{
             result += eargs.Data;
-            if(appendToDataREceived != null && !String.IsNullOrEmpty(eargs.Data))
+            if(appendToDataReceived != null && !String.IsNullOrEmpty(eargs.Data))
             {
-                result += appendToDataREceived;
+                result += appendToDataReceived;
             }
         };
         proc.Start();
