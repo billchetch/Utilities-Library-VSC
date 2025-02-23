@@ -16,7 +16,7 @@ public static class CMD
         
         proc.OutputDataReceived += (sender, eargs) =>{
             result += eargs.Data;
-            if(appendToDataREceived != null)
+            if(appendToDataREceived != null && !String.IsNullOrEmpty(eargs.Data))
             {
                 result += appendToDataREceived;
             }
