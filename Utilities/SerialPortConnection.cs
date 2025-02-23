@@ -50,10 +50,7 @@ public abstract class SerialPortConnection
                 var locationSuffix = devInfo["location_id"].Replace("0", "").Replace("x", "").Replace(" / ", "").Substring(0, 2) + "0";
                 if(portName.Contains(locationSuffix))
                 {
-                    usbDevInfo.PortName = portName;
-                    usbDevInfo.ProductID = System.Convert.ToInt32(devInfo["product_id"], 16);
-                    usbDevInfo.VendorID = System.Convert.ToInt32(devInfo["vendor_id"], 16);
-                    return usbDevInfo;
+                    return new USBDeviceInfo(portName, devInfo["product_id"], devInfo["vendor_id"]);
                 }
             }
             
@@ -73,11 +70,7 @@ public abstract class SerialPortConnection
                 throw new Exception(String.Format("Could not retrieve sufficient info for usb serial device @ {0}", portName));
             }
             
-            usbDevInfo.PortName = lines[0];
-            usbDevInfo.ProductID = int.Parse(lines[1], System.Globalization.NumberStyles.HexNumber);
-            usbDevInfo.VendorID = int.Parse(lines[2], System.Globalization.NumberStyles.HexNumber);
-            
-            return usbDevInfo;
+            return new USBDeviceInfo(lines[0], lines[1], lines[2]);
         }
         else
         {
@@ -88,11 +81,26 @@ public abstract class SerialPortConnection
     #endregion
 
     #region Enums and Classes
-    public struct USBDeviceInfo
+    public class USBDeviceInfo
     {
         public String PortName;
         public int ProductID;
         public int VendorID;
+
+        public USBDeviceInfo(String portName, int productID, int vendorID)
+        {
+            PortName = portName;
+            ProductID = productID;
+            VendorID = vendorID;
+        }
+
+        public USBDeviceInfo(String portName, String productID, string vendorID) : 
+                this(portName, System.Convert.ToInt32(productID, 16), System.Convert.ToInt32(vendorID, 16))
+        {}
+        public bool IsValidProduct(int productID, int vendorID)
+        {
+            return productID == ProductID && vendorID == VendorID;
+        }
     }
     #endregion
 
