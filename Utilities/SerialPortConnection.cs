@@ -30,9 +30,16 @@ public abstract class SerialPortConnection
         return false;
     }
 
+    static public String[] GetUSBDevicePaths(String pathSpec)
+    {
+        var dirName = Path.GetDirectoryName(pathSpec);
+        var fName = Path.GetFileName(pathSpec);
+        var files = Directory.GetFiles(dirName, fName);
+        return files;
+    } 
+
     static public USBDeviceInfo GetUSBDeviceInfo(String portName)
     {
-        USBDeviceInfo usbDevInfo;
         if(OperatingSystem.IsMacOS())
         {
             var xml = CMD.Exec("system_profiler", "-xml SPUSBDataType");
