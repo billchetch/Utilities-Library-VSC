@@ -30,9 +30,9 @@ public abstract class SerialPortConnection
         return false;
     }
 
-    static public Dictionary<string, string> GetUSBDeviceInfo(String portName)
+    static public USBDeviceInfo GetUSBDeviceInfo(String portName)
     {
-        Dictionary<string, string> devInfo;
+        USBDeviceInfo usbDevInfo;
         if(OperatingSystem.IsMacOS())
         {
             var xml = CMD.Exec("system_profiler", "-xml SPUSBDataType");
@@ -46,11 +46,14 @@ public abstract class SerialPortConnection
 
             foreach(var dev in devices)
             {
-                devInfo = dev.Elements().Where(x => x.Name == "key").Select(x => x).ToDictionary(x => x.Value, x => ((XElement)x.NextNode).Value);
+                var devInfo = dev.Elements().Where(x => x.Name == "key").Select(x => x).ToDictionary(x => x.Value, x => ((XElement)x.NextNode).Value);
                 var lid = devInfo["location_id"];
                 if(portName.Contains(lid.Substring(4, 3)))
                 {
-                    return devInfo;
+                    usbDevInfo.PortName = portName;
+                    usbDevInfo.ProductID = 0;
+                    usbDevInfo.VendorID = 0;
+                    return usbDevInfo;
                 }
             }
             
@@ -58,8 +61,23 @@ public abstract class SerialPortConnection
         }
         else if(OperatingSystem.IsLinux())
         {
+            var output = CMD.Exec("udevadm", "info -q property --property=DEVNAME,ID_USB_MODEL_ID,ID_USB_VENDOR_ID --no-pager --value " + portName, Environment.NewLine);
             
-            throw new Exception(String.Format("Could not find device info for usb serial device @ {0}", portName));
+            if(String.IsNullOrEmpty(output))
+            {
+                throw new Exception(String.Format("Could not find device info for usb serial device @ {0}", portName));
+            }
+            var lines = output.Split(Environment.NewLine);
+            if(lines.Length < 3)
+            {
+                throw new Exception(String.Format("Could not retrieve sufficient info for usb serial device @ {0}", portName));
+            }
+            
+            usbDevInfo.PortName = lines[0];
+            usbDevInfo.ProductID = int.Parse(lines[1], System.Globalization.NumberStyles.HexNumber);
+            usbDevInfo.VendorID = int.Parse(lines[2], System.Globalization.NumberStyles.HexNumber);
+            
+            return usbDevInfo;
         }
         else
         {
@@ -70,6 +88,12 @@ public abstract class SerialPortConnection
     #endregion
 
     #region Enums and Classes
+    public struct USBDeviceInfo
+    {
+        public String PortName;
+        public int ProductID;
+        public int VendorID;
+    }
     #endregion
 
     #region Fields
