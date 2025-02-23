@@ -30,7 +30,7 @@ public abstract class SerialPortConnection
         return false;
     }
 
-    static public String[] GetUSBDevicePaths(String pathSpec)
+    static public String[] GetUSBDevices(String pathSpec)
     {
         var dirName = Path.GetDirectoryName(pathSpec);
         var fName = Path.GetFileName(pathSpec);
