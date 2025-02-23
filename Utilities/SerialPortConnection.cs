@@ -47,12 +47,12 @@ public abstract class SerialPortConnection
             foreach(var dev in devices)
             {
                 var devInfo = dev.Elements().Where(x => x.Name == "key").Select(x => x).ToDictionary(x => x.Value, x => ((XElement)x.NextNode).Value);
-                var lid = devInfo["location_id"];
-                if(portName.Contains(lid.Substring(4, 3)))
+                var locationSuffix = devInfo["location_id"].Replace("0", "").Replace("x", "").Replace(" / ", "").Substring(0, 2) + "0";
+                if(portName.Contains(locationSuffix))
                 {
                     usbDevInfo.PortName = portName;
-                    usbDevInfo.ProductID = 0;
-                    usbDevInfo.VendorID = 0;
+                    usbDevInfo.ProductID = System.Convert.ToInt32(devInfo["product_id"], 16);
+                    usbDevInfo.VendorID = System.Convert.ToInt32(devInfo["vendor_id"], 16);
                     return usbDevInfo;
                 }
             }
