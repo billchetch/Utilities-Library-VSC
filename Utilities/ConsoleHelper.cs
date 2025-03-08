@@ -1,6 +1,6 @@
 using System;
 
-namespace Chetch.Messaging;
+namespace Chetch.Utilities;
 
 public static class ConsoleHelper
 {
