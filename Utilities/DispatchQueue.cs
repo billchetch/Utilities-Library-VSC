@@ -73,7 +73,6 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
             {
                 if(CanDequeue())
                 {
-                    Console.WriteLine("Dequeuing is possible so waiting for a release...");
                     if(IsEmpty)
                     {
                         releaseQueue.WaitOne();
@@ -85,16 +84,14 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
                         OnDequeue(qi);
                     }
                     releaseQueue.Reset();
-                    Console.WriteLine("Queue cannot be dequeued any more there are {0} items left", Count);
                 }
                 else
                 {
-                    Console.WriteLine("Dequeueing not yet possible so waiting...");
                     await Task.Delay(DISPATCH_LOOP_WAIT, ct);
                 }
             } while(!ct.IsCancellationRequested);
 
-            Console.WriteLine("Dispatch task has ended!");
+            //Console.WriteLine("Dispatch task has ended!");
         }, ct);
 
         return qTask;
