@@ -22,6 +22,8 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
     ManualResetEvent releaseQueue = new ManualResetEvent(false);
 
     Task qTask;
+
+    bool flushing = false;
     #endregion
     
     #region Constructors
@@ -71,19 +73,25 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
         qTask = Task.Run(async ()=>{
             do
             {
-                if(CanDequeue())
+                if(CanDequeue() || flushing)
                 {
-                    if(IsEmpty)
+                    if(IsEmpty && !flushing)
                     {
                         releaseQueue.WaitOne();
                     }
-                    
-                    T qi;
-                    while(CanDequeue() && TryDequeue(out qi))
+                    try
                     {
-                        OnDequeue(qi);
+                        T qi;
+                        while((CanDequeue() || flushing) && TryDequeue(out qi))
+                        {
+                            OnDequeue(qi);
+                        }
                     }
-                    releaseQueue.Reset();
+                    finally
+                    {
+                        releaseQueue.Reset();
+                        flushing = false;
+                    }
                 }
                 else
                 {
@@ -95,6 +103,12 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
         }, ct);
 
         return qTask;
+    }
+
+    public void Flush()
+    {
+        if(IsEmpty)return;
+        flushing = true;
     }
 #endregion
 }
