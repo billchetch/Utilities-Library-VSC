@@ -11,6 +11,8 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
 
     #region Properties
     public Func<bool> CanDequeue { get; set; }
+
+    public TaskStatus RunningStatus => qTask == null ? TaskStatus.WaitingToRun : qTask.Status;
     #endregion
 
 
