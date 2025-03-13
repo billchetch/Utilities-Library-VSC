@@ -16,6 +16,14 @@ public static class ConsoleHelper
         System.Console.Write(text, args);
     }
 
+    static public void CLRL(int row = -1, int col = 0)
+    {
+        if(row < 0)row = Console.CursorTop;
+        Console.SetCursorPosition(col, row);
+        Console.Write(new string(' ', Console.WindowWidth - col)); 
+        Console.SetCursorPosition(col, row);
+    }
+
     static public void LF(int n = 1)
     {
         for(int i = 0; i < n; i++)
