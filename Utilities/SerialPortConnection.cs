@@ -32,52 +32,117 @@ public abstract class SerialPortConnection
 
     static public String[] GetUSBDevices(String pathSpec)
     {
-        var dirName = Path.GetDirectoryName(pathSpec);
-        var fName = Path.GetFileName(pathSpec);
-        var files = Directory.GetFiles(dirName, fName);
-        return files;
+        if (OperatingSystem.IsWindows())
+        {
+            using var searcher = new ManagementObjectSearcher(@"Select * From Win32_PnPEntity WHERE Description Like '" + pathSpec + "%'");
+            using ManagementObjectCollection collection = searcher.Get();
+
+            List<String> devices = new List<String>();
+            foreach (var device in collection)
+            {
+                devices.Add(device.GetPropertyValue("Description").ToString());
+            }
+            return devices.ToArray();
+        }
+        else
+        {
+            var dirName = Path.GetDirectoryName(pathSpec);
+            var fName = Path.GetFileName(pathSpec);
+            var files = Directory.GetFiles(dirName, fName);
+            return files;
+        }
     } 
 
     static public USBDeviceInfo GetUSBDeviceInfo(String portName)
     {
-        if(OperatingSystem.IsMacOS())
+        if (OperatingSystem.IsMacOS())
         {
             var xml = CMD.Exec("system_profiler", "-xml SPUSBDataType");
             //parse the output which is expected to be XML
             var xe = XElement.Parse(xml);
-            
+
             //Now search through the XML to find the right reg items
             var devices = xe.Descendants("key")
                 .Where(x => x.Value == "location_id")
                 .Select(x => (XElement)x.Parent).ToList();
 
-            foreach(var dev in devices)
+            foreach (var dev in devices)
             {
                 var devInfo = dev.Elements().Where(x => x.Name == "key").Select(x => x).ToDictionary(x => x.Value, x => ((XElement)x.NextNode).Value);
                 var locationSuffix = devInfo["location_id"].Replace("0", "").Replace("x", "").Replace(" / ", "").Substring(0, 2) + "0";
-                if(portName.Contains(locationSuffix))
+                if (portName.Contains(locationSuffix))
                 {
                     return new USBDeviceInfo(portName, devInfo["product_id"], devInfo["vendor_id"]);
                 }
             }
-            
+
             throw new Exception(String.Format("Could not find device info for usb serial device @ {0}", portName));
         }
-        else if(OperatingSystem.IsLinux())
+        else if (OperatingSystem.IsLinux())
         {
             var output = CMD.Exec("udevadm", "info -q property --property=DEVNAME,ID_USB_MODEL_ID,ID_USB_VENDOR_ID --no-pager --value " + portName, Environment.NewLine);
-            
-            if(String.IsNullOrEmpty(output))
+
+            if (String.IsNullOrEmpty(output))
             {
                 throw new Exception(String.Format("Could not find device info for usb serial device @ {0}", portName));
             }
             var lines = output.Split(Environment.NewLine);
-            if(lines.Length < 3)
+            if (lines.Length < 3)
             {
                 throw new Exception(String.Format("Could not retrieve sufficient info for usb serial device @ {0}", portName));
             }
-            
+
             return new USBDeviceInfo(lines[0], lines[1], lines[2]);
+        }
+        else if (OperatingSystem.IsWindows())
+        {
+            using var searcher = new ManagementObjectSearcher(@"Select * From Win32_PnPEntity WHERE Description='" + portName + "'");
+            var mo = searcher.Get().OfType<ManagementObject>().FirstOrDefault();
+            if (mo == default(ManagementObject))
+            {
+                throw new Exception(String.Format("No device found with description {0}", portName));
+            }
+
+            //Extract info
+            String port = "N/A";
+            if (mo.GetPropertyValue("Caption").ToString().Contains("(COM"))
+            {
+                var s = mo.GetPropertyValue("Caption").ToString();
+                port = s.Substring(s.IndexOf("(COM") + 1);
+                port = port.Replace(")", String.Empty).Trim();
+            }
+            else
+            {
+                throw new Exception(String.Format("No COM port info found for {0}", portName));
+            }
+            String productID = "N/A";
+            String vendorID = "N/A";
+            var deviceID = mo.GetPropertyValue("DeviceID").ToString();
+            if (deviceID.Contains("PID_"))
+            {
+                int idx1 = deviceID.IndexOf("PID_") + 4;
+                int idx2 = deviceID.IndexOf("&", idx1);
+                productID = deviceID.Substring(idx1, idx2 - idx1);
+                productID = productID.Replace("\\6", "");
+            }
+            else
+            {
+                throw new Exception(String.Format("No Product ID (PID) found for {0}", portName));
+            }
+
+            if (deviceID.Contains("VID_"))
+            {
+                int idx1 = deviceID.IndexOf("VID_") + 4;
+                int idx2 = deviceID.IndexOf("&", idx1);
+                vendorID = deviceID.Substring(idx1, idx2 - idx1);
+                vendorID = vendorID.Replace("\\6", "");
+            }
+            else
+            {
+                throw new Exception(String.Format("No Vendor ID (VID) info found for {0}", portName));
+            }
+
+            return new USBDeviceInfo(port, productID, vendorID);
         }
         else
         {
