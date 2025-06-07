@@ -123,7 +123,7 @@ public abstract class SerialPortConnection
                 int idx1 = deviceID.IndexOf("PID_") + 4;
                 int idx2 = deviceID.IndexOf("&", idx1);
                 productID = deviceID.Substring(idx1, idx2 - idx1);
-                productID = productID.Replace("\\6", "");
+                productID = productID.Replace("\\6", ""); //not sure why there is this at the end of the product ID
             }
             else
             {
@@ -135,7 +135,7 @@ public abstract class SerialPortConnection
                 int idx1 = deviceID.IndexOf("VID_") + 4;
                 int idx2 = deviceID.IndexOf("&", idx1);
                 vendorID = deviceID.Substring(idx1, idx2 - idx1);
-                vendorID = vendorID.Replace("\\6", "");
+                vendorID = vendorID.Replace("\\6", ""); //see point about product ID above
             }
             else
             {
