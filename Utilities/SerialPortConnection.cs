@@ -69,10 +69,18 @@ public abstract class SerialPortConnection
             foreach (var dev in devices)
             {
                 var devInfo = dev.Elements().Where(x => x.Name == "key").Select(x => x).ToDictionary(x => x.Value, x => ((XElement)x.NextNode).Value);
+<<<<<<< HEAD
                 var locationSuffix = devInfo["location_id"].Replace("0", "").Replace("x", "").Replace(" / ", "").Substring(0, 2) + "0";
                 if (portName.Contains(locationSuffix))
+=======
+                if (portName.Contains('-'))
+>>>>>>> 243a965 (sdfs)
                 {
-                    return new USBDeviceInfo(portName, devInfo["product_id"], devInfo["vendor_id"]);
+                    var lid = portName.Substring(portName.IndexOf('-') + 1);
+                    if (devInfo["location_id"].Contains(lid))
+                    {
+                        return new USBDeviceInfo(portName, devInfo["product_id"], devInfo["vendor_id"]);    
+                    }
                 }
             }
 

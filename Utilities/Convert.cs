@@ -151,27 +151,35 @@ namespace Chetch.Utilities
             {
                 throw new ArgumentNullException("Cannot covert null object ");
             }
-            if(o is byte[])
+            if (o is byte[])
             {
                 return (byte[])o;
-            } else if (o.GetType().IsArray)
+            }
+            else if (o.GetType().IsArray)
             {
                 System.Collections.IEnumerable enumerable = (System.Collections.IEnumerable)o;
                 List<byte> bytes = new List<byte>();
-                foreach(var itm in enumerable)
+                foreach (var itm in enumerable)
                 {
                     byte[] bts = ToBytes(itm, System.Runtime.InteropServices.Marshal.SizeOf(itm.GetType()));
                     bytes.AddRange(bts);
                 }
                 return bytes.ToArray();
             }
-            else if(o is String)
+            else if (o is String)
             {
                 return ToBytes((String)o);
-            } else if(o is ValueType)
+
+            }
+            else if (o is Enum)
+            {
+                return ToBytes((int)o);
+            }
+            else if (o is ValueType)
             {
                 return ToBytes((ValueType)o, padToLength);
-            } else
+            }
+            else
             {
                 throw new ArgumentException(String.Format("Cannot covert to bytes object of type: {0}", o.GetType()));
             }
