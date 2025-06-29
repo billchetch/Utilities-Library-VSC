@@ -253,7 +253,7 @@ public abstract class SerialPortConnection
         DataReceived?.Invoke(this, data);
     }
     
-    public void Connect(bool assertPortExistence = false)
+    public void Connect()
     {
         connectTimer.Stop();
         
@@ -276,10 +276,6 @@ public abstract class SerialPortConnection
 
                         OnDataReceived(data);
                     };
-                }
-                else if(assertPortExistence)
-                {
-                    throw new Exception(String.Format("Cannot connect as port {0} does not exist", PortName));
                 }
             }
             
