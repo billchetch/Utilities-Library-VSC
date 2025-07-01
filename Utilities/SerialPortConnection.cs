@@ -127,10 +127,6 @@ public abstract class SerialPortConnection
                 productID = deviceID.Substring(idx1, idx2 - idx1);
                 productID = productID.Replace("\\6", ""); //not sure why there is this at the end of the product ID
             }
-            else
-            {
-                throw new Exception(String.Format("No Product ID (PID) found for {0}", portName));
-            }
 
             if (deviceID.Contains("VID_"))
             {
@@ -138,10 +134,6 @@ public abstract class SerialPortConnection
                 int idx2 = deviceID.IndexOf("&", idx1);
                 vendorID = deviceID.Substring(idx1, idx2 - idx1);
                 vendorID = vendorID.Replace("\\6", ""); //see point about product ID above
-            }
-            else
-            {
-                throw new Exception(String.Format("No Vendor ID (VID) info found for {0}", portName));
             }
 
             return new USBDeviceInfo(port, productID, vendorID);
