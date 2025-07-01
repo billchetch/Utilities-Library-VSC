@@ -100,6 +100,7 @@ public class BluetoothSerialConnection : SerialPortConnection
             foreach (var f in devices)
             {
                 SerialPortConnection.USBDeviceInfo di = SerialPortConnection.GetUSBDeviceInfo(f);
+                return di.PortName;
             }
             throw new Exception(String.Format("Cannot find device based on search term {0}", devicePath));
         }

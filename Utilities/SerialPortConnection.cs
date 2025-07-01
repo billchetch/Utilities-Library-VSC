@@ -117,8 +117,8 @@ public abstract class SerialPortConnection
             {
                 throw new Exception(String.Format("No COM port info found for {0}", portName));
             }
-            String productID = "N/A";
-            String vendorID = "N/A";
+            String productID = "0";
+            String vendorID = "0";
             var deviceID = mo.GetPropertyValue("DeviceID").ToString();
             if (deviceID.Contains("PID_"))
             {
