@@ -4,9 +4,9 @@ namespace Chetch.Utilities;
 
 public static class CheckSum
 {
-    public static byte SimpleAddition(byte[] data)
+    public static ulong SimpleAddition(byte[] data)
     {
-        byte sum = 0;
+        ulong sum = 0;
         unchecked // Let overflow occur without exceptions
         {
             foreach (byte b in data)
@@ -15,5 +15,19 @@ public static class CheckSum
             }
         }
         return sum;
+    }
+
+    public static byte[] SimpleAddition(byte[] data, int checksumSize)
+    {
+        ulong sum = 0;
+        unchecked // Let overflow occur without exceptions
+        {
+            foreach (byte b in data)
+            {
+                sum += b;
+            }
+        }
+
+        return Chetch.Utilities.Convert.ToBytes(sum, checksumSize);
     }
 }
