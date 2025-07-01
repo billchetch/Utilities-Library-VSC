@@ -196,7 +196,7 @@ public abstract class SerialPortConnection
     #region Properties
     public String PortName { get; internal set; } = String.Empty;
     
-    public bool IsConnected => serialPort != null && serialPort.IsOpen && SerialPortConnection.PortExists(PortName);
+    public bool IsConnected => serialPort != null && serialPort.IsOpen && PortExists();
     #endregion
 
     #region Events
@@ -243,6 +243,11 @@ public abstract class SerialPortConnection
     #region Methods
     abstract protected String GetPortName();
 
+    virtual protected bool PortExists()
+    {
+        return SerialPortConnection.PortExists(PortName);
+    }
+
     virtual protected void OnDataReceived(byte[] data)
     {
         DataReceived?.Invoke(this, data);
@@ -254,22 +259,23 @@ public abstract class SerialPortConnection
         
         try{
             //Serial port creation
-            if(serialPort == null)
+            if (serialPort == null)
             {
                 PortName = GetPortName();
-                if(PortExists(PortName))
-                {   
+                if (PortExists())
+                {
                     serialPort = new SerialPort(PortName, baudRate, parity, dataBits, stopBits);
-                    serialPort.DataReceived += (ArrayShapeEncoder, eargs) => {
-                            int dataLength = serialPort.BytesToRead;
-                            byte[] data = new byte[dataLength];
-                            int nbrDataRead = serialPort.Read(data, 0, dataLength);
+                    serialPort.DataReceived += (ArrayShapeEncoder, eargs) =>
+                    {
+                        int dataLength = serialPort.BytesToRead;
+                        byte[] data = new byte[dataLength];
+                        int nbrDataRead = serialPort.Read(data, 0, dataLength);
 
-                            if (nbrDataRead == 0)
-                                return;
-                    
-                            OnDataReceived(data);
-                        };    
+                        if (nbrDataRead == 0)
+                            return;
+
+                        OnDataReceived(data);
+                    };
                 }
             }
             
