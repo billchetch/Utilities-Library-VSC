@@ -28,6 +28,8 @@ ExecStartPost=/usr/bin/sdptool add SP
 
 
 MAC OS
+Can use the standard bluetooth serial port cu.Bluetooth-Incoming-Port.  As of writing this it will receive data but not transmit :(
+
 
 WINDOWS
 Todo
