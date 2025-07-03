@@ -276,7 +276,7 @@ public abstract class SerialPortConnection
             {
                 serialPort.Open();
                 connected = true;
-                Connected.Invoke(this, connected);
+                Connected?.Invoke(this, connected);
             }
         }
         catch(Exception e)
