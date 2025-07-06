@@ -10,6 +10,16 @@ public static class ConsoleHelper
         System.Console.ReadKey(true);
     }
 
+    static public void PK2S()
+    {
+        PK("Press a key to start");
+    }
+
+    static public void PK2E()
+    {
+        PK("Press a key to end");
+    }
+
     static public void CLR(String text, params String[] args)
     {
         System.Console.Clear();
