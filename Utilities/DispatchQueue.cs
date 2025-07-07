@@ -15,6 +15,8 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
     int DispatchLoopWait { get; set; } = DISPATCH_LOOP_WAIT;
     
     public TaskStatus RunningStatus => qTask == null ? TaskStatus.WaitingToRun : qTask.Status;
+
+    public bool IsRunning => RunningStatus == TaskStatus.Running;
     #endregion
 
 
