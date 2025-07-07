@@ -26,15 +26,22 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
     Task qTask;
 
     bool flushing = false;
+
+    int dispatchLoopWait = DISPATCH_LOOP_WAIT;
     #endregion
-    
+
     #region Constructors
     public DispatchQueue() : base()
-    {}
-    
-    public DispatchQueue(Func<bool> canDequeue) : base()
+    { }
+
+    public DispatchQueue(Func<bool> canDequeue, int dispatchLoopWait = DISPATCH_LOOP_WAIT) : base()
     {
         CanDequeue = canDequeue;
+        if (dispatchLoopWait < 0)
+        {
+            throw new ArgumentException("Dispatch loop wait cannot be less than 0");
+        }
+        this.dispatchLoopWait = dispatchLoopWait;
     }
     #endregion
 
@@ -97,7 +104,7 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
                 }
                 else
                 {
-                    await Task.Delay(DISPATCH_LOOP_WAIT, ct);
+                    await Task.Delay(dispatchLoopWait, ct);
                 }
             } while(!ct.IsCancellationRequested);
 
