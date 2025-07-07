@@ -79,9 +79,14 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
         return Run(qctSource.Token);
     }
 
-    virtual public void Stop()
+    virtual public Task Stop(bool flush = false)
     {
+        if (flush)
+        {
+            Flush();
+        }
         qctSource.Cancel();
+        return qTask;
     }
 
     public Task Run(CancellationToken ct)
