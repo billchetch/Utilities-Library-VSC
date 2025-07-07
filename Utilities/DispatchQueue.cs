@@ -128,7 +128,7 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
                         flushing = false;
                     }
                 }
-                else
+                else if(!ct.IsCancellationRequested)
                 {
                     await Task.Delay(DispatchLoopWait, ct);
                 }
