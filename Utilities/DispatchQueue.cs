@@ -108,7 +108,7 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
         {
             do
             {
-                if (CanDequeue() || flushing)
+                if (CanDequeue() || IsEmpty || flushing)
                 {
                     if (IsEmpty && !flushing)
                     {
