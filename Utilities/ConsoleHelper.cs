@@ -10,6 +10,13 @@ public static class ConsoleHelper
         System.Console.ReadKey(true);
     }
 
+    static public ConsoleKey RK(String text, params String[] args)
+    {
+        System.Console.WriteLine(text, args);
+        var cki = System.Console.ReadKey(true);
+        return cki.Key;
+    }
+
     static public void PK2S()
     {
         PK("Press a key to start");
