@@ -12,6 +12,8 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
     #region Properties
     public Func<bool> CanDequeue { get; set; }
 
+    int DispatchLoopWait { get; set; } = DISPATCH_LOOP_WAIT;
+    
     public TaskStatus RunningStatus => qTask == null ? TaskStatus.WaitingToRun : qTask.Status;
     #endregion
 
@@ -25,9 +27,10 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
 
     Task qTask;
 
-    bool flushing = false;
+    //Used by start and stop methods
+    CancellationTokenSource qctSource;
 
-    int dispatchLoopWait = DISPATCH_LOOP_WAIT;
+    bool flushing = false;
     #endregion
 
     #region Constructors
@@ -41,7 +44,7 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
         {
             throw new ArgumentException("Dispatch loop wait cannot be less than 0");
         }
-        this.dispatchLoopWait = dispatchLoopWait;
+        DispatchLoopWait = dispatchLoopWait;
     }
     #endregion
 
@@ -64,34 +67,50 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
         Dequeued?.Invoke(this, qi);
     }
 
+    virtual public Task Start()
+    {
+        if (qctSource == null)
+        {
+            qctSource = new CancellationTokenSource();
+        }
+
+        return Run(qctSource.Token);
+    }
+
+    virtual public void Stop()
+    {
+        qctSource.Cancel();
+    }
+
     public Task Run(CancellationToken ct)
     {
-        
-        if(CanDequeue == null)
+
+        if (CanDequeue == null)
         {
             throw new Exception("Cannot Run without a CanDequeue function, please suppply.");
         }
-        
-        if(qTask != null && (qTask.Status != TaskStatus.Faulted || qTask.Status != TaskStatus.Canceled))
+
+        if (qTask != null && (qTask.Status != TaskStatus.Faulted || qTask.Status != TaskStatus.Canceled))
         {
             throw new Exception(String.Format("Cannot run as task is currently in {0} status", qTask.Status));
         }
 
-        ct.Register(()=>{ releaseQueue.Set(); });
+        ct.Register(() => { releaseQueue.Set(); });
 
-        qTask = Task.Run(async ()=>{
+        qTask = Task.Run(async () =>
+        {
             do
             {
-                if(CanDequeue() || flushing)
+                if (CanDequeue() || flushing)
                 {
-                    if(IsEmpty && !flushing)
+                    if (IsEmpty && !flushing)
                     {
                         releaseQueue.WaitOne();
                     }
                     try
                     {
                         T qi;
-                        while((CanDequeue() || flushing) && TryDequeue(out qi))
+                        while ((CanDequeue() || flushing) && TryDequeue(out qi))
                         {
                             OnDequeue(qi);
                         }
@@ -104,9 +123,9 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
                 }
                 else
                 {
-                    await Task.Delay(dispatchLoopWait, ct);
+                    await Task.Delay(DispatchLoopWait, ct);
                 }
-            } while(!ct.IsCancellationRequested);
+            } while (!ct.IsCancellationRequested);
 
             //Console.WriteLine("Dispatch task has ended!");
         }, ct);
