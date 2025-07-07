@@ -69,14 +69,14 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
         Dequeued?.Invoke(this, qi);
     }
 
-    virtual public Task Start()
+    virtual public void Start()
     {
         if (qctSource == null)
         {
             qctSource = new CancellationTokenSource();
         }
 
-        return Run(qctSource.Token);
+        Run(qctSource.Token);
     }
 
     virtual public Task Stop(bool flush = false)
