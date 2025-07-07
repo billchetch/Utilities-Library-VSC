@@ -62,7 +62,7 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
         }
     }
 
-    protected void OnDequeue(T qi)
+    virtual protected void OnDequeue(T qi)
     {
         Dequeued?.Invoke(this, qi);
     }
