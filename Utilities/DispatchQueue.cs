@@ -49,7 +49,7 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
     #endregion
 
     #region Methods
-    public bool Enqueue(T qi, bool releaseQueueAfter = true)
+    virtual public bool Enqueue(T qi, bool releaseQueueAfter = true)
     {
         base.Enqueue(qi);
         if(releaseQueueAfter)
