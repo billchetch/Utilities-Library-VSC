@@ -81,6 +81,11 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
 
     virtual public Task Stop(bool flush = false)
     {
+        if (!IsRunning)
+        {
+            return qTask;
+        }
+        
         if (flush)
         {
             Flush();
