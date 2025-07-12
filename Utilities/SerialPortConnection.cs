@@ -22,8 +22,10 @@ public abstract class SerialPortConnection
     static public bool PortExists(String portName)
     {
         var portNames = SerialPort.GetPortNames();
-        foreach(var pn in portNames){
-            if(pn.Equals(portName)){
+        foreach (var pn in portNames)
+        {
+            if (pn.Equals(portName))
+            {
                 return true;
             }
         }
@@ -51,7 +53,7 @@ public abstract class SerialPortConnection
             var files = Directory.GetFiles(dirName, fName);
             return files;
         }
-    } 
+    }
 
     static public USBDeviceInfo GetUSBDeviceInfo(String portName)
     {
@@ -73,7 +75,7 @@ public abstract class SerialPortConnection
                     var lid = portName.Substring(portName.IndexOf('-') + 1);
                     if (devInfo["location_id"].Contains(lid))
                     {
-                        return new USBDeviceInfo(portName, devInfo["product_id"], devInfo["vendor_id"]);    
+                        return new USBDeviceInfo(portName, devInfo["product_id"], devInfo["vendor_id"]);
                     }
                 }
             }
@@ -160,9 +162,9 @@ public abstract class SerialPortConnection
             VendorID = vendorID;
         }
 
-        public USBDeviceInfo(String portName, String productID, string vendorID) : 
+        public USBDeviceInfo(String portName, String productID, string vendorID) :
                 this(portName, System.Convert.ToInt32(productID, 16), System.Convert.ToInt32(vendorID, 16))
-        {}
+        { }
         public bool IsValidProduct(int productID, int vendorID)
         {
             return productID == ProductID && vendorID == VendorID;
@@ -177,18 +179,21 @@ public abstract class SerialPortConnection
     StopBits stopBits;
 
     SerialPort serialPort;
-    
+
     Exception lastError;
 
     System.Timers.Timer connectTimer = new System.Timers.Timer();
+    Object connectionLock = new Object();
 
     bool connected; //we save state for triggering events
     #endregion
 
     #region Properties
     public String PortName { get; internal set; } = String.Empty;
-    
+
     public bool IsConnected => serialPort != null && serialPort.IsOpen && PortExists();
+
+    public bool AutoConnect { get; set; } = true;
     #endregion
 
     #region Events
@@ -207,28 +212,35 @@ public abstract class SerialPortConnection
 
         connectTimer.AutoReset = false;
         connectTimer.Interval = REOPEN_TIMER_INTERVAL;
-        connectTimer.Elapsed += (sender, eargs) => {
-                connectTimer.Stop();
+        connectTimer.Elapsed += (sender, eargs) =>
+        {
+            connectTimer.Stop();
 
+            lock (connectionLock)
+            {
                 try
                 {
-                    if(!IsConnected)
+                    if (AutoConnect && !IsConnected)
                     {
-                        if(connected){
+                        if (connected)
+                        {
                             connected = false;
                             Connected?.Invoke(this, connected);
                         }
+
+                        //ensure fresh reconnect
                         serialPort?.Dispose();
                         serialPort = null;
-                        Connect();
+                        connect();
                     }
                 }
                 catch (Exception e)
                 {
                     lastError = e;
                 }
-                connectTimer.Start();
-            };
+            }
+            connectTimer.Start();
+        };
     }
     #endregion
 
@@ -244,12 +256,11 @@ public abstract class SerialPortConnection
     {
         DataReceived?.Invoke(this, data);
     }
-    
-    public void Connect()
+
+    private void connect()
     {
-        connectTimer.Stop();
-        
-        try{
+        try
+        {
             //Serial port creation
             if (serialPort == null)
             {
@@ -270,49 +281,82 @@ public abstract class SerialPortConnection
                     };
                 }
             }
-            
+
             //Serial port opening
-            if(serialPort != null && !serialPort.IsOpen)
+            if (serialPort != null && !serialPort.IsOpen)
             {
                 serialPort.Open();
                 connected = true;
                 Connected?.Invoke(this, connected);
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new Exception(String.Format("Failed to connect: {0}", e.Message));
         }
+    }
+
+    public void Connect()
+    {
+        AutoConnect = true;
+        
+        connectTimer.Stop();
+        try
+        {
+            lock (connectionLock)
+            {
+                connect();
+            }
+        }
+        catch (Exception e)
+        {
+            throw;
+        }
         finally
         {
-            //restart the ol timer
             connectTimer.Start();
         }
     }
 
     public void SendData(byte[] data)
     {
-        if(data.Length > 0)
+        if (data.Length > 0)
         {
             serialPort.Write(data, 0, data.Length);
         }
     }
-    
+
     public void Disconnect()
     {
-        if(connected){
-            connected = false;
-            Connected?.Invoke(this, connected);
-        }
-        if(serialPort != null)
-        {
-            if(serialPort.IsOpen)
-                serialPort.Close();
-
-            serialPort.Dispose();
-            serialPort = null;
-        }
+        AutoConnect = false;
+        
         connectTimer.Stop();
+
+        lock (connectionLock)
+        {
+            if (connected)
+            {
+                connected = false;
+                Connected?.Invoke(this, connected);
+            }
+
+            if (serialPort != null)
+            {
+
+                if (serialPort.IsOpen)
+                    serialPort.Close();
+
+                serialPort.Dispose();
+                serialPort = null;
+            }
+        }
+    }
+
+    public void Reconnect()
+    {
+        Disconnect();
+        AutoConnect = true;
+        connectTimer.Start();
     }
     #endregion
 }
