@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Net.Sockets;
 
 namespace Chetch.Utilities;
@@ -22,7 +23,9 @@ public class LocalSocket
 
     #region Fields
     String path;
-    Socket socket;
+    public Socket socket;
+
+    CancellationTokenSource lctSource;
     #endregion
 
     #region Constructors
@@ -36,17 +39,75 @@ public class LocalSocket
     #region Methods
     public void Connect()
     {
+        if (socket.IsBound)
+        {
+            throw new Exception(String.Format("Cannot connect this socket as it is already bound to {0}", path));
+        }
         socket.Connect(new UnixDomainSocketEndPoint(path));
     }
 
     public void SendData(byte[] data)
     {
         socket.Send(data);    
-    } 
+    }
+
+    public void StartListening()
+    {
+        if (lctSource == null)
+        {
+            lctSource = new CancellationTokenSource();
+        }
+
+        Listen(lctSource.Token);
+    }
+
+    public void Listen(CancellationToken ct)
+    {
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
+        socket.Bind(new UnixDomainSocketEndPoint(path));
+        socket.Listen();
+
+        Task.Run(() =>
+        {
+            do
+            {
+                var newSocket = socket.Accept();
+                if (!ct.IsCancellationRequested)
+                {
+                    byte[] buffer = new byte[256];
+                    try
+                    {
+                        var n = newSocket.Receive(buffer);
+                        if (DataReceived != null && n > 0)
+                        {
+                            var data = buffer.Take(n).ToArray();
+                            DataReceived?.Invoke(this, data);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message);
+                    }
+                }
+            } while (!ct.IsCancellationRequested);
+        }, ct);
+    }
+
+    public void StopListening()
+    {
+        lctSource.Cancel();
+    }
 
     public void Disconnect()
     {
-        socket.Disconnect(false);
+        //socket?.Shutdown(SocketShutdown.)
+        if (IsConnected)
+        {
+            socket.Disconnect(false);
+        }
     }
 
     public void Reconnect()
