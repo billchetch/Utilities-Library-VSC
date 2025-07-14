@@ -16,7 +16,7 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
     
     public TaskStatus RunningStatus => qTask == null ? TaskStatus.WaitingToRun : qTask.Status;
 
-    public bool IsRunning => RunningStatus == TaskStatus.Running;
+    public bool IsRunning => RunningStatus == TaskStatus.Running || RunningStatus == TaskStatus.WaitingForActivation;
     #endregion
 
 
