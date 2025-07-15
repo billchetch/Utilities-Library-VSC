@@ -19,13 +19,19 @@ public class LocalSocket
 
     #region Properties
     public bool IsConnected => socket != null && socket.Connected;
+    public bool IsBound => socket != null && socket.IsBound;
+
+    public bool IsListening => listening;
     #endregion
 
     #region Fields
     String path;
     public Socket socket;
+    public Socket sendSocket;
 
-    CancellationTokenSource lctSource;
+    CancellationTokenSource ctSource = new CancellationTokenSource();
+
+    bool listening = false;
     #endregion
 
     #region Constructors
@@ -41,24 +47,46 @@ public class LocalSocket
     {
         if (socket.IsBound)
         {
-            throw new Exception(String.Format("Cannot connect this socket as it is already bound to {0}", path));
+            throw new NotImplementedException(String.Format("Cannot connect this socket as it is already bound to {0}", path));
         }
         socket.Connect(new UnixDomainSocketEndPoint(path));
+        sendSocket = socket;
+
+        Task.Run(() =>
+        {
+            byte[] buffer = new byte[256];
+            while (!ctSource.IsCancellationRequested)
+            {
+                try
+                {
+                    int n = socket.Receive(buffer);
+                    if (n > 0)
+                    {
+                        var data = buffer.Take(n).ToArray();
+                        DataReceived?.Invoke(this, data);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            }
+        }, ctSource.Token);
     }
 
     public void SendData(byte[] data)
     {
-        socket.Send(data);    
+        sendSocket.Send(data);    
     }
 
     public void StartListening()
     {
-        if (lctSource == null)
+        if (IsConnected)
         {
-            lctSource = new CancellationTokenSource();
+            throw new NotImplementedException("Client socket cannot listen");
         }
-
-        Listen(lctSource.Token);
+        
+        Listen(ctSource.Token);
     }
 
     public void Listen(CancellationToken ct)
@@ -69,18 +97,27 @@ public class LocalSocket
         }
         socket.Bind(new UnixDomainSocketEndPoint(path));
         socket.Listen();
+        listening = true;
 
         Task.Run(() =>
         {
-            do
+            while (!ct.IsCancellationRequested)
             {
-                var newSocket = socket.Accept();
-                if (!ct.IsCancellationRequested)
+                try
+                {
+                    sendSocket = socket.Accept();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+
+                while (!ct.IsCancellationRequested)
                 {
                     byte[] buffer = new byte[256];
                     try
                     {
-                        var n = newSocket.Receive(buffer);
+                        var n = sendSocket.Receive(buffer);
                         if (DataReceived != null && n > 0)
                         {
                             var data = buffer.Take(n).ToArray();
@@ -92,20 +129,38 @@ public class LocalSocket
                         Console.WriteLine(e.Message);
                     }
                 }
-            } while (!ct.IsCancellationRequested);
+            }
+            listening = false;
         }, ct);
     }
 
     public void StopListening()
     {
-        lctSource.Cancel();
+        if (IsConnected)
+        {
+            throw new NotImplementedException("Use Disconnect to disconnect client sockets");
+        }
+        ctSource?.Cancel();
+        if (socket.Connected)
+        {
+            socket.Disconnect(false);    
+        }
+        if (sendSocket!= null && sendSocket != socket && sendSocket.Connected)
+        {
+            sendSocket.Disconnect(false);
+        }
     }
 
     public void Disconnect()
     {
-        //socket?.Shutdown(SocketShutdown.)
+        if (IsListening)
+        {
+            throw new NotImplementedException("Use StopListening to stop server sockets");
+        }
         if (IsConnected)
         {
+            ctSource?.Cancel();
+            socket?.Shutdown(SocketShutdown.Send);
             socket.Disconnect(false);
         }
     }
