@@ -33,11 +33,17 @@ public static class ConsoleHelper
         System.Console.Write(text, args);
     }
 
+    static public void CLRLF(int n = 0)
+    {
+        System.Console.Clear();
+        LF(n);
+    }
+
     static public void CLRL(int row = -1, int col = 0)
     {
-        if(row < 0)row = Console.CursorTop;
+        if (row < 0) row = Console.CursorTop;
         Console.SetCursorPosition(col, row);
-        Console.Write(new string(' ', Console.WindowWidth - col)); 
+        Console.Write(new string(' ', Console.WindowWidth - col));
         Console.SetCursorPosition(col, row);
     }
 

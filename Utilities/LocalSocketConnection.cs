@@ -8,9 +8,8 @@ namespace Chetch.Utilities;
 /// <summary>
 /// As opposed to network sockets this is desiged for in machine
 /// </summary>
-public class LocalSocket
+public class LocalSocketConnection
 {
-
     #region Events
     public event EventHandler<byte[]> DataReceived;
 
@@ -35,7 +34,7 @@ public class LocalSocket
     #endregion
 
     #region Constructors
-    public LocalSocket(String path)
+    public LocalSocketConnection(String path)
     {
         this.path = path;
         socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP);
@@ -51,6 +50,7 @@ public class LocalSocket
         }
         socket.Connect(new UnixDomainSocketEndPoint(path));
         sendSocket = socket;
+        Connected?.Invoke(this, true);
 
         Task.Run(() =>
         {
@@ -106,6 +106,7 @@ public class LocalSocket
                 try
                 {
                     sendSocket = socket.Accept();
+                    Connected.Invoke(this, true);
                 }
                 catch (Exception e)
                 {
@@ -122,6 +123,11 @@ public class LocalSocket
                         {
                             var data = buffer.Take(n).ToArray();
                             DataReceived?.Invoke(this, data);
+                        }
+                        else if (n == 0)
+                        {
+                            Connected.Invoke(this, false);
+                            break;
                         }
                     }
                     catch (Exception e)
@@ -145,7 +151,7 @@ public class LocalSocket
         {
             socket.Disconnect(false);    
         }
-        if (sendSocket!= null && sendSocket != socket && sendSocket.Connected)
+        if (sendSocket != null && sendSocket != socket && sendSocket.Connected)
         {
             sendSocket.Disconnect(false);
         }
@@ -162,6 +168,7 @@ public class LocalSocket
             ctSource?.Cancel();
             socket?.Shutdown(SocketShutdown.Send);
             socket.Disconnect(false);
+            Connected?.Invoke(this, false);
         }
     }
 
