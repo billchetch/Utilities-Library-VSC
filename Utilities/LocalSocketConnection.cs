@@ -17,7 +17,7 @@ public class LocalSocketConnection
     #endregion
 
     #region Properties
-    public bool IsConnected => socket != null && socket.Connected;
+    public bool IsConnected => sendSocket != null && sendSocket.Connected;
     public bool IsBound => socket != null && socket.IsBound;
 
     public bool IsListening => listening;
@@ -81,9 +81,9 @@ public class LocalSocketConnection
 
     public void StartListening()
     {
-        if (IsConnected)
+        if (IsListening)
         {
-            throw new NotImplementedException("Client socket cannot listen");
+            throw new Exception("Already listening");
         }
         
         Listen(ctSource.Token);
@@ -91,6 +91,11 @@ public class LocalSocketConnection
 
     public void Listen(CancellationToken ct)
     {
+        if (socket == sendSocket)
+        {
+            throw new NotImplementedException("Cannot listen as already socket is in client mode");
+        }
+
         if (File.Exists(path))
         {
             File.Delete(path);
@@ -142,7 +147,7 @@ public class LocalSocketConnection
 
     public void StopListening()
     {
-        if (IsConnected)
+        if (socket == sendSocket)
         {
             throw new NotImplementedException("Use Disconnect to disconnect client sockets");
         }
