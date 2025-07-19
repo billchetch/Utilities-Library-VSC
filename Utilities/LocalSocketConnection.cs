@@ -6,7 +6,13 @@ namespace Chetch.Utilities;
 
 
 /// <summary>
-/// As opposed to network sockets this is desiged for in machine
+/// As opposed to network sockets this is desiged for in machine use.
+/// 
+/// IMPORTANT: AddressNotAvailable (49) error!!!
+/// In order for a client socket to connect there needs to be a socket file.
+/// In order to create the socket file the Bind method should be called. This is done in the Listen method
+/// so it's better to start by making the listening socket first and testing that which will create the file then after that
+/// clients will not give an AddressNotAvailable error.
 /// </summary>
 public class LocalSocketConnection
 {
@@ -100,6 +106,7 @@ public class LocalSocketConnection
         {
             File.Delete(path);
         }
+        //The binding call creates the socket file
         socket.Bind(new UnixDomainSocketEndPoint(path));
         socket.Listen();
         listening = true;
