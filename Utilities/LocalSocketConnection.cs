@@ -41,6 +41,8 @@ public class LocalSocketConnection
 
     CancellationTokenSource ctSource = new CancellationTokenSource();
 
+    Object connectionLock = new Object();
+
     Task? connectionTask;
     Task? listeningTask;
 
@@ -113,27 +115,33 @@ public class LocalSocketConnection
             connectTimer.Elapsed += (sender, eargs) =>
             {
                 connectTimer.Stop();
-                try
+
+                lock (connectionLock)
                 {
-                    if (AutoConnect && !IsConnected)
+                    try
                     {
-                        connect();
+                        if (AutoConnect && !IsConnected)
+                        {
+                            connect();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        //TODO
                     }
                 }
-                catch (Exception e)
-                {
-                    //TODO
-                }
-                finally
-                {
-                    connectTimer.Start();
-                }
+                connectTimer.Start();
             };
         }
 
         try
         {
             connect();
+        }
+        catch (System.Net.Sockets.SocketException)
+        {
+            //We leave so that the connect timer picks it up
+            
         }
         catch (Exception)
         {
@@ -249,12 +257,15 @@ public class LocalSocketConnection
         connectTimer?.Stop();
         if (IsConnected)
         {
-            ctSource?.Cancel();
-            socket?.Disconnect(true);
-            sendSocket = null;
-            Connected?.Invoke(this, false);
-            socket?.Dispose();
-            socket = null;
+            lock (connectionLock)
+            {
+                ctSource?.Cancel();
+                socket?.Disconnect(true);
+                sendSocket = null;
+                Connected?.Invoke(this, false);
+                socket?.Dispose();
+                socket = null;
+            }
         }
     }
 
