@@ -308,7 +308,7 @@ public abstract class SerialPortConnection
                 connect();
             }
         }
-        catch (Exception e)
+        catch (Exception)
         {
             throw;
         }

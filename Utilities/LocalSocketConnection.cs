@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace Chetch.Utilities;
 
@@ -16,6 +17,10 @@ namespace Chetch.Utilities;
 /// </summary>
 public class LocalSocketConnection
 {
+    #region Constants
+    public const int CONNECT_TIMER_INTERVAL = 2000;
+    #endregion
+
     #region Events
     public event EventHandler<byte[]> DataReceived;
 
@@ -23,9 +28,9 @@ public class LocalSocketConnection
     #endregion
 
     #region Properties
+    public bool AutoConnect { get; set; } = true;
     public bool IsConnected => sendSocket != null && sendSocket.Connected;
     public bool IsBound => socket != null && socket.IsBound;
-
     public bool IsListening => listening;
     #endregion
 
@@ -36,6 +41,11 @@ public class LocalSocketConnection
 
     CancellationTokenSource ctSource = new CancellationTokenSource();
 
+    Task? connectionTask;
+    Task? listeningTask;
+
+    System.Timers.Timer? connectTimer = null;
+
     bool listening = false;
     #endregion
 
@@ -43,22 +53,25 @@ public class LocalSocketConnection
     public LocalSocketConnection(String path)
     {
         this.path = path;
-        socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP);
     }
     #endregion
 
     #region Methods
-    public void Connect()
+
+    private void connect()
     {
-        if (socket.IsBound)
+        if (socket == null)
         {
-            throw new NotImplementedException(String.Format("Cannot connect this socket as it is already bound to {0}", path));
+            socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP);
         }
+        
+         //Here we connect
         socket.Connect(new UnixDomainSocketEndPoint(path));
         sendSocket = socket;
         Connected?.Invoke(this, true);
 
-        Task.Run(() =>
+        //Fire up teh data received task
+        connectionTask = Task.Run(() =>
         {
             byte[] buffer = new byte[256];
             while (!ctSource.IsCancellationRequested)
@@ -71,6 +84,11 @@ public class LocalSocketConnection
                         var data = buffer.Take(n).ToArray();
                         DataReceived?.Invoke(this, data);
                     }
+                    else
+                    {
+                        Reconnect();
+                        break;
+                    }
                 }
                 catch (Exception e)
                 {
@@ -78,6 +96,53 @@ public class LocalSocketConnection
                 }
             }
         }, ctSource.Token);
+    }
+
+    public void Connect()
+    {
+        if (socket != null && socket.IsBound)
+        {
+            throw new NotImplementedException(String.Format("Cannot connect this socket as it is already bound to {0}", path));
+        }
+
+        if (connectTimer == null)
+        {
+            connectTimer = new System.Timers.Timer();
+            connectTimer.AutoReset = false;
+            connectTimer.Interval = CONNECT_TIMER_INTERVAL;
+            connectTimer.Elapsed += (sender, eargs) =>
+            {
+                connectTimer.Stop();
+                try
+                {
+                    if (AutoConnect && !IsConnected)
+                    {
+                        connect();
+                    }
+                }
+                catch (Exception e)
+                {
+                    //TODO
+                }
+                finally
+                {
+                    connectTimer.Start();
+                }
+            };
+        }
+
+        try
+        {
+            connect();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+        finally
+        {
+            connectTimer.Start();
+        }
     }
 
     public void SendData(byte[] data)
@@ -97,6 +162,11 @@ public class LocalSocketConnection
 
     public void Listen(CancellationToken ct)
     {
+        if (socket == null)
+        {
+            socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP);
+        }
+
         if (socket == sendSocket)
         {
             throw new NotImplementedException("Cannot listen as already socket is in client mode");
@@ -111,7 +181,7 @@ public class LocalSocketConnection
         socket.Listen();
         listening = true;
 
-        Task.Run(() =>
+        listeningTask =Task.Run(() =>
         {
             while (!ct.IsCancellationRequested)
             {
@@ -175,18 +245,27 @@ public class LocalSocketConnection
         {
             throw new NotImplementedException("Use StopListening to stop server sockets");
         }
+
+        connectTimer?.Stop();
         if (IsConnected)
         {
             ctSource?.Cancel();
-            socket?.Shutdown(SocketShutdown.Send);
-            socket.Disconnect(false);
+            socket?.Disconnect(true);
+            sendSocket = null;
             Connected?.Invoke(this, false);
+            socket?.Dispose();
+            socket = null;
         }
     }
 
-    public void Reconnect()
+    public async void Reconnect()
     {
-        //TODO
+        Disconnect();
+        if (connectionTask != null)
+        {
+            await connectionTask;
+        }
+        connectTimer?.Start();
     }
     #endregion
 }
