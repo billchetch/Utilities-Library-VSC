@@ -274,7 +274,12 @@ public class LocalSocketConnection
         Disconnect();
         if (connectionTask != null)
         {
-            await connectionTask;
+            try
+            {
+                await connectionTask;
+            }
+            catch (Exception)
+            { }
         }
         connectTimer?.Start();
     }
