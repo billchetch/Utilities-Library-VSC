@@ -280,6 +280,8 @@ public class LocalSocketConnection
             }
             catch (Exception)
             { }
+
+            ctSource = new CancellationTokenSource();
         }
         connectTimer?.Start();
     }
