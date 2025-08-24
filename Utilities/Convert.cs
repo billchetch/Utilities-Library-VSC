@@ -144,10 +144,24 @@ namespace Chetch.Utilities
             return new string(chars);
         }
 
+        public static String ToBitString(byte val)
+        {
+            return System.Convert.ToString(val, 2).PadLeft(8, '0');
+        }
+        
+        public static String ToBitString(UInt16 val)
+        {
+            return System.Convert.ToString(val, 2).PadLeft(16, '0');
+        }
+
+        public static String ToBitString(UInt32 val)
+        {
+            return System.Convert.ToString(val, 2).PadLeft(32, '0');
+        }
 
         public static byte[] ToBytes(Object o, int padToLength = -1)
         {
-            if(o == null)
+            if (o == null)
             {
                 throw new ArgumentNullException("Cannot covert null object ");
             }
@@ -326,8 +340,7 @@ namespace Chetch.Utilities
             }
             return n;
         }
-
-
+        
         public static byte ToByte(byte[] bytes, bool littleEndian = true)
         {
             return (byte)ToInt(bytes, littleEndian);
