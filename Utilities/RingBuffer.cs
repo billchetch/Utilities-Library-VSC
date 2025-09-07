@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace Chetch.Utilities;
 
-public class CircularBuffer<T> : IEnumerable<T>
+public class RingBuffer<T> : IEnumerable<T>
 {
     private readonly T[] buffer;
     private int head; // Index of the oldest element
@@ -17,7 +17,7 @@ public class CircularBuffer<T> : IEnumerable<T>
 
     public bool IsEmpty => count == 0;
 
-    public CircularBuffer(int capacity)
+    public RingBuffer(int capacity)
     {
         if (capacity <= 0)
         {
