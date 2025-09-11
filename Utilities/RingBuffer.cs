@@ -47,7 +47,7 @@ public class RingBuffer<T> : IEnumerable<T>
     }
 
     // Retrieves and removes the oldest item from the buffer.
-    public T Get()
+    public T Remove()
     {
         if (count == 0)
         {
