@@ -13,11 +13,13 @@ public class RingBuffer<T> : IEnumerable<T>
     public int Capacity { get; }
     public int Count => count;
 
+    public bool Reverse { get; set; } = false;
+
     public bool IsFull => count == Capacity;
 
     public bool IsEmpty => count == 0;
 
-    public RingBuffer(int capacity)
+    public RingBuffer(int capacity, bool reverse = false)
     {
         if (capacity <= 0)
         {
@@ -28,6 +30,7 @@ public class RingBuffer<T> : IEnumerable<T>
         head = 0;
         tail = 0;
         count = 0;
+        Reverse = reverse;
     }
 
     // Adds an item to the buffer. If full, overwrites the oldest element.
@@ -88,11 +91,23 @@ public class RingBuffer<T> : IEnumerable<T>
             yield break;
         }
 
-        int current = head;
-        for (int i = 0; i < count; i++)
+        if (Reverse)
         {
-            yield return buffer[current];
-            current = (current + 1) % Capacity;
+            int current = tail == 0 ? (Capacity - 1) : tail - 1;
+            for (int i = 0; i < count; i++)
+            {
+                yield return buffer[current];
+                current = current == 0 ? (Capacity - 1) : current - 1;
+            }
+        }
+        else
+        {
+            int current = head;
+            for (int i = 0; i < count; i++)
+            {
+                yield return buffer[current];
+                current = (current + 1) % Capacity;
+            }
         }
     }
 
