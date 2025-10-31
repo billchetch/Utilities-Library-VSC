@@ -149,8 +149,8 @@ namespace Chetch.Utilities
         {
             if (!String.IsNullOrEmpty(byteSeperator))
             {
-                var n = Math.Ceiling((double)bitString.Length / 8.0);
-                for (int i = 1; i < n; i++)
+                int n = (int)Math.Ceiling((double)bitString.Length / 8.0);
+                for (int i = n; i > 1; i--)
                 {
                     bitString = bitString.Insert(i * 8, byteSeperator);
                 }
