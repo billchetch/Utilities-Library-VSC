@@ -1,4 +1,5 @@
-﻿using System.Web;
+﻿using System.Net.NetworkInformation;
+using System.Web;
 
 namespace Chetch.Utilities
 {
@@ -144,19 +145,32 @@ namespace Chetch.Utilities
             return new string(chars);
         }
 
+        private static String addBitStringSeperators(String bitString, String byteSeperator)
+        {
+            if (!String.IsNullOrEmpty(byteSeperator))
+            {
+                var n = Math.Ceiling((double)bitString.Length / 8.0);
+                for (int i = 1; i < n; i++)
+                {
+                    bitString = bitString.Insert(i * 8, byteSeperator);
+                }
+            }
+            return bitString;
+        }
+        
         public static String ToBitString(byte val)
         {
             return System.Convert.ToString(val, 2).PadLeft(8, '0');
         }
         
-        public static String ToBitString(UInt16 val)
+        public static String ToBitString(UInt16 val, String byteSeperator = null)
         {
-            return System.Convert.ToString(val, 2).PadLeft(16, '0');
+            return addBitStringSeperators(System.Convert.ToString(val, 2).PadLeft(16, '0'), byteSeperator);
         }
 
-        public static String ToBitString(UInt32 val)
+        public static String ToBitString(UInt32 val, String byteSeperator = null)
         {
-            return System.Convert.ToString(val, 2).PadLeft(32, '0');
+            return addBitStringSeperators(System.Convert.ToString(val, 2).PadLeft(32, '0'), byteSeperator);
         }
 
         public static byte[] ToBytes(Object o, int padToLength = -1)
