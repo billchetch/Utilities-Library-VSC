@@ -152,7 +152,7 @@ namespace Chetch.Utilities
                 int n = (int)Math.Ceiling((double)bitString.Length / 8.0);
                 for (int i = n; i > 1; i--)
                 {
-                    bitString = bitString.Insert(i * 8, byteSeperator);
+                    bitString = bitString.Insert((i - 1) * 8, byteSeperator);
                 }
             }
             return bitString;
