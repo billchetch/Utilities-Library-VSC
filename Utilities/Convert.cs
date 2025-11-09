@@ -223,7 +223,7 @@ namespace Chetch.Utilities
             return bytes;
         }
 
-        public static byte[] ToBytes(ValueType n, bool removeZeroBytePadding = true, int padToLength = -1)
+        public static byte[] ToBytes(ValueType n, bool removeZeroBytePadding = false, int padToLength = -1)
         {
             return ToBytes(n, BitConverter.IsLittleEndian, removeZeroBytePadding, padToLength);
         }
@@ -231,16 +231,16 @@ namespace Chetch.Utilities
 
         public static byte[] ToBytes(ValueType n, int padToLength)
         {
-            return ToBytes(n, BitConverter.IsLittleEndian, true, padToLength);
+            return ToBytes(n, BitConverter.IsLittleEndian, false, padToLength);
         }
 
-        public static byte[] ToBytes(ValueType n, bool littleEndian, bool removeZeroBytePadding = true, int padToLength = -1)
+        public static byte[] ToBytes(ValueType n, bool littleEndian, bool removeZeroBytePadding = false, int padToLength = -1)
         {
             int sz = System.Runtime.InteropServices.Marshal.SizeOf(n);
             if (sz <= sizeof(System.Int64))
             {
                 byte[] bytes = ToBytes(System.Convert.ToInt64(n), littleEndian, removeZeroBytePadding, padToLength);
-                int maxSize = System.Math.Max(sz, padToLength);
+                int maxSize = padToLength > 0 ? padToLength : sz;
                 if (bytes.Length > maxSize)
                 {
                     byte[] pruned = new byte[maxSize];
