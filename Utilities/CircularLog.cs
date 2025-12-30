@@ -5,7 +5,7 @@ namespace Chetch.Utilities;
 
 public class CircularLog<T> : RingBuffer<T>
 {
-    public ulong EntriesCount { get; internal set; } = 0;
+    public ulong WritesCount { get; internal set; } = 0;
 
     public CircularLog(int capacity, bool reverse = true) : base(capacity, reverse)
     {}
@@ -18,12 +18,12 @@ public class CircularLog<T> : RingBuffer<T>
     public override void Add(T item)
     {
         base.Add(item);
-        EntriesCount++;
+        WritesCount++;
     }
 
     public override void Clear()
     {
         base.Clear();
-        EntriesCount = 0;
+        WritesCount = 0;
     }
 }
