@@ -34,7 +34,7 @@ public class RingBuffer<T> : IEnumerable<T>
     }
 
     // Adds an item to the buffer. If full, overwrites the oldest element.
-    public void Add(T item)
+    virtual public void Add(T item)
     {
         buffer[tail] = item;
         tail = (tail + 1) % Capacity;
@@ -50,7 +50,7 @@ public class RingBuffer<T> : IEnumerable<T>
     }
 
     // Retrieves and removes the oldest item from the buffer.
-    public T Remove()
+    virtual public T Remove()
     {
         if (count == 0)
         {
@@ -75,7 +75,7 @@ public class RingBuffer<T> : IEnumerable<T>
     }
 
     // Clears all elements from the buffer.
-    public void Clear()
+    virtual public void Clear()
     {
         Array.Clear(buffer, 0, Capacity);
         head = 0;
