@@ -205,7 +205,7 @@ namespace Chetch.Utilities
             }
             else if(o is bool)
             {
-                return ToBytes((byte)o);
+                return ToBytes(System.Convert.ToByte(o));
             }
             else if (o is ValueType)
             {
