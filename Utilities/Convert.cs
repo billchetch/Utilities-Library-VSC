@@ -201,7 +201,11 @@ namespace Chetch.Utilities
             }
             else if (o is Enum)
             {
-                return ToBytes((int)o);
+                return ToBytes((byte)o);
+            }
+            else if(o is bool)
+            {
+                return ToBytes((byte)o);
             }
             else if (o is ValueType)
             {
