@@ -1,16 +1,20 @@
 using System;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Chetch.Utilities;
 
 public class DispatchQueue<T> : ConcurrentQueue<T>
 {
     #region Constants
+    public const int DISPATCH_INTERVAL = 0; //minimal wait time between items being dequeued
     public const int DISPATCH_LOOP_WAIT = 500;
     #endregion
 
     #region Properties
     public Func<bool> CanDequeue { get; set; }
+
+    public int DispatchInterval { get; set; } = 0; //In millis
 
     int DispatchLoopWait { get; set; } = DISPATCH_LOOP_WAIT;
     
@@ -18,7 +22,6 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
 
     public bool IsRunning => RunningStatus == TaskStatus.Running || RunningStatus == TaskStatus.WaitingForActivation;
     #endregion
-
 
     #region Events
     public event EventHandler<T> Dequeued;
@@ -33,15 +36,20 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
     CancellationTokenSource qctSource;
 
     bool flushing = false;
+
+    DateTime lastDequeuedOn;
     #endregion
 
     #region Constructors
     public DispatchQueue() : base()
     { }
 
-    public DispatchQueue(Func<bool> canDequeue, int dispatchLoopWait = DISPATCH_LOOP_WAIT) : base()
+    public DispatchQueue(Func<bool> canDequeue, int dispatchInterval = DISPATCH_INTERVAL, int dispatchLoopWait = DISPATCH_LOOP_WAIT) : base()
     {
         CanDequeue = canDequeue;
+
+        DispatchInterval = dispatchInterval;
+
         if (dispatchLoopWait < 0)
         {
             throw new ArgumentException("Dispatch loop wait cannot be less than 0");
@@ -64,8 +72,19 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
         }
     }
 
-    virtual protected void OnDequeue(T qi)
+    virtual protected async Task OnDequeue(T qi)
     {
+        if(lastDequeuedOn != default(DateTime) && DispatchInterval > 0)
+        {
+             var tms = (int)(DateTime.Now - lastDequeuedOn).TotalMilliseconds;
+             if(tms < DispatchInterval)
+            {
+                Console.WriteLine("Waiting: {0}ms", DispatchInterval - tms);
+                await Task.Delay(DispatchInterval - tms);
+            }
+        }
+        
+        lastDequeuedOn = DateTime.Now;
         Dequeued?.Invoke(this, qi);
     }
 
@@ -124,7 +143,7 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
                         T qi;
                         while ((CanDequeue() || flushing) && TryDequeue(out qi))
                         {
-                            OnDequeue(qi);
+                            await OnDequeue(qi);
                         }
                     }
                     finally
@@ -133,7 +152,7 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
                         flushing = false;
                     }
                 }
-                else if(!ct.IsCancellationRequested)
+                else if(!ct.IsCancellationRequested && DispatchLoopWait > 0)
                 {
                     await Task.Delay(DispatchLoopWait, ct);
                 }
