@@ -79,7 +79,7 @@ public class DispatchQueue<T> : ConcurrentQueue<T>
              var tms = (int)(DateTime.Now - lastDequeuedOn).TotalMilliseconds;
              if(tms < DispatchInterval)
             {
-                Console.WriteLine("Waiting: {0}ms", DispatchInterval - tms);
+                //Console.WriteLine("Waiting: {0}ms", DispatchInterval - tms);
                 await Task.Delay(DispatchInterval - tms);
             }
         }
