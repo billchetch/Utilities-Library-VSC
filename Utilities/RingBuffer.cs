@@ -64,16 +64,6 @@ public class RingBuffer<T> : IEnumerable<T>
         return item;
     }
 
-    // Peeks at the oldest item without removing it.
-    public T Peek()
-    {
-        if (count == 0)
-        {
-            throw new InvalidOperationException("Buffer is empty.");
-        }
-        return buffer[head];
-    }
-
     // Clears all elements from the buffer.
     virtual public void Clear()
     {
