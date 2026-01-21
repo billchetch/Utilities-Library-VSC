@@ -270,14 +270,16 @@ public abstract class SerialPortConnection
                     serialPort = new SerialPort(PortName, baudRate, parity, dataBits, stopBits);
                     serialPort.DataReceived += (ArrayShapeEncoder, eargs) =>
                     {
-                        int dataLength = serialPort.BytesToRead;
-                        byte[] data = new byte[dataLength];
-                        int nbrDataRead = serialPort.Read(data, 0, dataLength);
+                        try{
+                            int dataLength = serialPort.BytesToRead;
+                            byte[] data = new byte[dataLength];
+                            int nbrDataRead = serialPort.Read(data, 0, dataLength);
 
-                        if (nbrDataRead == 0)
-                            return;
+                            if (nbrDataRead == 0)
+                                return;
 
-                        OnDataReceived(data);
+                            OnDataReceived(data);
+                        } catch {}
                     };
                 }
             }
