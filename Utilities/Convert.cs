@@ -201,7 +201,9 @@ namespace Chetch.Utilities
             }
             else if (o is Enum)
             {
-                return ToBytes((byte)o);
+                //System.Runtime.InteropServices.Marshal.SizeOf(Enum.GetUnderlyingType(o.GetType()))
+                var n = System.Convert.ChangeType(o, Enum.GetUnderlyingType(o.GetType()));
+                return ToBytes(n);
             }
             else if(o is bool)
             {
