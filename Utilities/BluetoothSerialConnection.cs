@@ -95,11 +95,11 @@ public class BluetoothSerialConnection : SerialPortConnection
     {
         if (OperatingSystem.IsWindows())
         {
-            var devices = SerialPortConnection.GetUSBDevices(devicePath);
+            var devices = SerialPortConnection.GetDevices(devicePath);
 
             foreach (var f in devices)
             {
-                SerialPortConnection.USBDeviceInfo di = SerialPortConnection.GetUSBDeviceInfo(f);
+                SerialPortConnection.DeviceInfo di = SerialPortConnection.GetUSBDeviceInfo(f);
                 return di.PortName;
             }
             throw new Exception(String.Format("Cannot find device based on search term {0}", devicePath));

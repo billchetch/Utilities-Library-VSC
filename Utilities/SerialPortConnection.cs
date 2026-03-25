@@ -32,7 +32,7 @@ public abstract class SerialPortConnection
         return false;
     }
 
-    static public String[] GetUSBDevices(String pathSpec)
+    static public String[] GetDevices(String pathSpec)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -55,7 +55,7 @@ public abstract class SerialPortConnection
         }
     }
 
-    static public USBDeviceInfo GetUSBDeviceInfo(String portName)
+    static public DeviceInfo GetUSBDeviceInfo(String portName)
     {
         if (OperatingSystem.IsMacOS())
         {
@@ -75,7 +75,7 @@ public abstract class SerialPortConnection
                     var lid = portName.Substring(portName.IndexOf('-') + 1);
                     if (devInfo["location_id"].Contains(lid))
                     {
-                        return new USBDeviceInfo(portName, devInfo["product_id"], devInfo["vendor_id"]);
+                        return new DeviceInfo(portName, devInfo["product_id"], devInfo["vendor_id"]);
                     }
                 }
             }
@@ -96,7 +96,7 @@ public abstract class SerialPortConnection
                 throw new Exception(String.Format("Could not retrieve sufficient info for usb serial device @ {0}", portName));
             }
 
-            return new USBDeviceInfo(lines[0], lines[1], lines[2]);
+            return new DeviceInfo(lines[0], lines[1], lines[2]);
         }
         else if (OperatingSystem.IsWindows())
         {
@@ -138,7 +138,7 @@ public abstract class SerialPortConnection
                 vendorID = vendorID.Replace("\\6", ""); //see point about product ID above
             }
 
-            return new USBDeviceInfo(port, productID, vendorID);
+            return new DeviceInfo(port, productID, vendorID);
         }
         else
         {
@@ -149,20 +149,20 @@ public abstract class SerialPortConnection
     #endregion
 
     #region Enums and Classes
-    public class USBDeviceInfo
+    public class DeviceInfo
     {
         public String PortName;
         public int ProductID;
         public int VendorID;
 
-        public USBDeviceInfo(String portName, int productID, int vendorID)
+        public DeviceInfo(String portName, int productID, int vendorID)
         {
             PortName = portName;
             ProductID = productID;
             VendorID = vendorID;
         }
 
-        public USBDeviceInfo(String portName, String productID, string vendorID) :
+        public DeviceInfo(String portName, String productID, string vendorID) :
                 this(portName, System.Convert.ToInt32(productID, 16), System.Convert.ToInt32(vendorID, 16))
         { }
         public bool IsValidProduct(int productID, int vendorID)
