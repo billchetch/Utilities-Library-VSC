@@ -146,6 +146,46 @@ public abstract class SerialPortConnection
         }
     }
 
+    static public DeviceInfo GetBluetoothDeviceInfo(String portName)
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            var xml = CMD.Exec("system_profiler", "-xml SPBluetoothDataType");
+            //parse the output which is expected to be XML
+            var xe = XElement.Parse(xml);
+
+            //Now search through the XML to find the right reg items
+            var devices = xe.Descendants("key")
+                .Where(x => x.Value == "device_address")
+                .Select(x => (XElement)x.Parent).ToList();
+
+            foreach (var dev in devices)
+            {
+                var devInfo = dev.Elements().Where(x => x.Name == "key").Select(x => x).ToDictionary(x => x.Value, x => ((XElement)x.NextNode).Value);
+                var devName = ((XElement)dev.Parent.FirstNode).Value;
+                if(portName.ToUpper().Contains(devName.ToUpper()))
+                {
+                    var pid = devInfo.ContainsKey("device_productID") ? devInfo["device_productID"] : "0xFFFF";
+                    var vid = devInfo.ContainsKey("device_vendorID") ? devInfo["device_vendorID"] : "0xFFFF";
+                    return new DeviceInfo(portName, pid, vid);
+                }
+            }
+
+            throw new Exception(String.Format("Could not find device info for bluetooth serial device @ {0}", portName));
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            throw new NotImplementedException("Not yet implemented for Linux!");
+        }
+        else if (OperatingSystem.IsWindows())
+        {
+            throw new NotImplementedException("Not yet implemented for Windows!");
+        }
+        else
+        {
+            throw new Exception(String.Format("Unrecognised platform: {0} Version: {1}", Environment.OSVersion.Platform, Environment.OSVersion.Version));
+        }
+    }
     #endregion
 
     #region Enums and Classes

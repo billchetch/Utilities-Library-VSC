@@ -35,4 +35,10 @@ public static class CMD
             throw new Exception("Process has not exited");
         }
     }
+
+    public static bool IsAvailable(String command)
+    {
+        var result = Exec("command", String.Format(" -v {0}", command));
+        return result != String.Empty;
+    }
 }
