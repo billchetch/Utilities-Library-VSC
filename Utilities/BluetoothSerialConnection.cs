@@ -45,52 +45,66 @@ public class BluetoothSerialConnection : SerialPortConnection
     String devicePath; //dev path or description (Windows)
     #endregion
 
+    #region Delegates
+    public Func<bool>? SPPAvailable;
+    #endregion
+
     #region Constructors
     public BluetoothSerialConnection(String devicePath, int baudRate = 9600, Parity parity = Parity.None, int dataBits = 8, StopBits stopBits = StopBits.One)
         : base(baudRate, parity, dataBits, stopBits)
     {
-
-        if (OperatingSystem.IsLinux())
+        if(devicePath != String.Empty)
         {
-            //check here if the rfcomm process is running to watch what we are doing
-            var result = CMD.Exec("bash", "-c \"ps aux | grep rfcomm\"", Environment.NewLine);
-            if (String.IsNullOrEmpty(result))
+            SetDevicePath(devicePath, false);
+        }
+    }
+    #endregion
+
+    #region Methods
+    public void SetDevicePath(String devicePath, bool assertExistence)
+    {
+        if(assertExistence)
+        {
+            if (OperatingSystem.IsLinux())
             {
-                throw new Exception("Cannot use BluetoothSerial as no connections will be detected since rfcomm watch is not running");
-            }
-            String[] processes = result.Split(Environment.NewLine);
-            String[] searchFor = new string[] { "rfcomm watch " + devicePath, "rfcomm watch hci0" };
-            bool procFound = false;
-            foreach (var proc in processes)
-            {
-                foreach (var name in searchFor)
+                //check here if the rfcomm process is running to watch what we are doing
+                var result = CMD.Exec("bash", "-c \"ps aux | grep rfcomm\"", Environment.NewLine);
+                if (String.IsNullOrEmpty(result))
                 {
-                    if (proc.Contains(name))
+                    throw new Exception("Cannot use BluetoothSerial as no connections will be detected since rfcomm watch is not running");
+                }
+                String[] processes = result.Split(Environment.NewLine);
+                String[] searchFor = new string[] { "rfcomm watch " + devicePath, "rfcomm watch hci0" };
+                bool procFound = false;
+                foreach (var proc in processes)
+                {
+                    foreach (var name in searchFor)
                     {
-                        procFound = true;
-                        break;
+                        if (proc.Contains(name))
+                        {
+                            procFound = true;
+                            break;
+                        }
                     }
                 }
+                if (!procFound)
+                {
+                    throw new Exception("Cannot use BluetoothSerial as no connections will be detected since rfcomm watch is not running");
+                }
             }
-            if (!procFound)
+            else if (OperatingSystem.IsMacOS())
             {
-                throw new Exception("Cannot use BluetoothSerial as no connections will be detected since rfcomm watch is not running");
-            }
-        }
-        else if (OperatingSystem.IsMacOS())
-        {
-            //Device path must exists in Mac OS and is not dependent on things being watched on rot
-            if (!File.Exists(devicePath))
-            {
-                throw new Exception(String.Format("Cannot find device path {0}", devicePath));
+                //Device path must exists in Mac OS and is not dependent on things being watched on rot
+                if (!File.Exists(devicePath))
+                {
+                    throw new Exception(String.Format("Cannot find device path {0}", devicePath));
+                }
             }
         }
 
         this.devicePath = devicePath;
     }
-    #endregion
 
-    #region Methods
     protected override string GetPortName()
     {
         if (OperatingSystem.IsWindows())
@@ -120,31 +134,11 @@ public class BluetoothSerialConnection : SerialPortConnection
 
     protected override bool PortExists()
     {
-        if (OperatingSystem.IsLinux())
+        if(SPPAvailable != null)
         {
-            if (!File.Exists(PortName))
-            {
-                return false;
-            }
-            else
-            {
-                String result = CMD.Exec("rfcomm", "-a");
-                if (String.IsNullOrEmpty(result))
-                {
-                    return false;
-                }
-                else
-                {
-                    String connected = "connected";
-                    return result.Contains(connected);
-                }
-            }
+            return base.PortExists() && SPPAvailable();
         }
-        else if (OperatingSystem.IsMacOS())
-        {
-            return File.Exists(devicePath);
-        }
-        else
+        else 
         {
             return base.PortExists();
         }

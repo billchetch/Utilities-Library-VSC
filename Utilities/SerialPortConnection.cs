@@ -222,8 +222,9 @@ public abstract class SerialPortConnection
 
     Exception lastError;
 
-    System.Timers.Timer connectTimer = new System.Timers.Timer();
     Object connectionLock = new Object();
+
+    System.Timers.Timer connectTimer  = new System.Timers.Timer();
 
     bool connected; //we save state for triggering events
     #endregion
@@ -233,6 +234,7 @@ public abstract class SerialPortConnection
 
     public bool IsConnected => serialPort != null && serialPort.IsOpen && PortExists();
 
+    
     public bool AutoConnect { get; set; } = true;
     #endregion
 
@@ -240,6 +242,10 @@ public abstract class SerialPortConnection
     public event EventHandler<byte[]> DataReceived;
 
     public event EventHandler<bool> Connected;
+    #endregion
+
+    #region Delegates
+    public Action<SerialPort>? OpenPort;
     #endregion
 
     #region Constructors
@@ -305,31 +311,39 @@ public abstract class SerialPortConnection
             if (serialPort == null)
             {
                 PortName = GetPortName();
-                if (PortExists())
+                serialPort = new SerialPort(PortName, baudRate, parity, dataBits, stopBits);
+                serialPort.DataReceived += (ArrayShapeEncoder, eargs) =>
                 {
-                    serialPort = new SerialPort(PortName, baudRate, parity, dataBits, stopBits);
-                    serialPort.DataReceived += (ArrayShapeEncoder, eargs) =>
-                    {
-                        try{
-                            int dataLength = serialPort.BytesToRead;
-                            byte[] data = new byte[dataLength];
-                            int nbrDataRead = serialPort.Read(data, 0, dataLength);
+                    try{
+                        int dataLength = serialPort.BytesToRead;
+                        byte[] data = new byte[dataLength];
+                        int nbrDataRead = serialPort.Read(data, 0, dataLength);
 
-                            if (nbrDataRead == 0)
-                                return;
+                        if (nbrDataRead == 0)
+                            return;
 
-                            OnDataReceived(data);
-                        } catch {}
-                    };
-                }
+                        OnDataReceived(data);
+                    } catch {}
+                };
+                
             }
 
             //Serial port opening
             if (serialPort != null && !serialPort.IsOpen)
             {
-                serialPort.Open();
-                connected = true;
-                Connected?.Invoke(this, connected);
+                if(OpenPort != null)
+                {
+                    OpenPort(serialPort);
+                } 
+                else 
+                {
+                    serialPort.Open();
+                }
+                if(serialPort.IsOpen)
+                {
+                    connected = true;
+                    Connected?.Invoke(this, connected);
+                }
             }
         }
         catch (Exception e)
